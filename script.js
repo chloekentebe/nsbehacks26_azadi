@@ -81,11 +81,89 @@ const observer = new IntersectionObserver(entries => {
 document.querySelectorAll('.video-card').forEach(card => observer.observe(card));
 
 // 4. Slide-Over Panel Logic
+const API_BASE = 'http://localhost:3001';
+
 function openPanel(type) {
-    document.getElementById('panel-title').innerText = type;
-    document.getElementById('panel-body').innerHTML = `<p>Coming soon...</p>`;
+    const title = type === 'articles' ? 'Articles' : type;
+    document.getElementById('panel-title').innerText = title;
     document.getElementById('content-panel').classList.add('active');
     document.getElementById('reward-modal').classList.remove('active');
+
+    if (type === 'articles') {
+        loadArticleRecommendations();
+        return;
+    }
+
+    document.getElementById('panel-body').innerHTML = `<p>Coming soon...</p>`;
+}
+
+async function loadArticleRecommendations() {
+    const panelBody = document.getElementById('panel-body');
+    const issues = [];
+    viewedVideos.forEach((id) => {
+        const video = videoData.find((v) => String(v.id) === String(id));
+        if (video) {
+            issues.push(`${video.hashtag} — ${video.desc}`);
+        }
+    });
+
+    if (issues.length === 0) {
+        panelBody.innerHTML = `
+            <p class="panel-message">Watch a few videos in your feed first. We'll recommend articles based on the issues you're learning about.</p>
+        `;
+        return;
+    }
+
+    panelBody.innerHTML = `<p class="panel-message loading">Getting article recommendations from AI…</p>`;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/recommend-articles`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ issues }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            panelBody.innerHTML = `<p class="panel-message error">${data.error || 'Could not load recommendations.'}</p>`;
+            return;
+        }
+
+        const list = data.recommendations || [];
+        if (list.length === 0) {
+            panelBody.innerHTML = `<p class="panel-message">No recommendations right now. Try again in a bit.</p>`;
+            return;
+        }
+
+        panelBody.innerHTML = `
+            <p class="panel-message">Based on what you've been watching:</p>
+            <ul class="article-list">
+                ${list.map((a) => {
+                    const title = a.title || 'Article';
+                    const hasRealUrl = a.url && String(a.url).startsWith('http');
+                    const url = hasRealUrl ? a.url : ('https://www.google.com/search?q=' + encodeURIComponent(title + ' article'));
+                    const summary = a.description ? escapeHtml(a.description) : '';
+                    return `
+                    <li class="article-item">
+                        <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="article-link">
+                            <span class="article-name-label">Article you’re about to read</span>
+                            <strong class="article-name">${escapeHtml(title)}</strong>
+                            ${summary ? `<span class="article-summary">${summary}</span>` : ''}
+                        </a>
+                    </li>
+                `;
+                }).join('')}
+            </ul>
+        `;
+    } catch (err) {
+        panelBody.innerHTML = `<p class="panel-message error">Cannot reach the server. Start it with: <code>npm start</code></p>`;
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function closePanel() {

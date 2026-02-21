@@ -130,6 +130,20 @@ video { width: 100%; height: 100%; object-fit: cover; }
 .back-btn { background: none; border: none; font-size: 32px; color: #333; cursor: pointer; }
 .panel-body { padding: 30px; overflow-y: auto; flex-grow: 1; }
 
+.panel-message { color: #555; margin: 0 0 1em; line-height: 1.5; }
+.panel-message.loading { color: var(--blue-5); font-style: italic; }
+.panel-message.error { color: #c00; }
+.panel-message code { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+
+.article-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 16px; }
+.article-item { border-bottom: 1px solid var(--blue-1); padding-bottom: 16px; }
+.article-item:last-child { border-bottom: none; }
+.article-link { text-decoration: none; color: inherit; display: block; }
+.article-name-label { display: none; }
+.article-name { color: var(--blue-5); font-size: 16px; display: block; margin-bottom: 6px; }
+.article-summary { color: #555; font-size: 14px; line-height: 1.4; display: block; }
+.article-link:hover .article-name { color: var(--blue-4); text-decoration: underline; }
+
 .map-overlay {
     position: fixed; top: 100%; left: 0; width: 100%; height: 100vh;
     background: white; z-index: 400; transition: top 0.4s ease;
