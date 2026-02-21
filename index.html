@@ -1,18 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>azadi - knowledge is power</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
     <header class="desktop-header">
@@ -20,21 +13,6 @@
             <h1 class="brand">azadi</h1>
             <span class="tagline">knowledge is power</span>
         </div>
-
-        <nav class="top-nav">
-            <div class="nav-icon" onclick="openPanel('articles')" title="Articles">
-                <i data-feather="book-open"></i>
-            </div>
-            <div class="nav-icon" onclick="openPanel('charities')" title="Charities">
-                <i data-feather="heart"></i>
-            </div>
-            <div class="nav-icon" onclick="openPanel('discussions')" title="Discussions">
-                <i data-feather="message-circle"></i>
-            </div>
-            <div class="nav-icon" onclick="openPanel('protests')" title="Protests">
-                <i data-feather="map-pin"></i>
-            </div>
-        </nav>
     </header>
 
     <div class="impact-bar-container">
@@ -42,14 +20,15 @@
     </div>
 
     <main class="desktop-feed-container" id="video-feed">
-    </main>
+        </main>
 
-    <div id="content-panel" class="desktop-side-panel">
-        <header class="panel-header">
-            <button onclick="closePanel()" class="back-btn">×</button>
-            <h2 id="panel-title">articles</h2>
+    <div id="white-page" class="white-page-overlay">
+        <header class="white-header">
+            <h2 id="new-page-title" class="page-title">Articles</h2>
+            <h1 class="return-brand" onclick="closeNewPage()">azadi</h1>
         </header>
-        <div id="panel-body" class="panel-body"></div>
+        <div id="new-page-content" class="page-content">
+            </div>
     </div>
 
     <div id="map-overlay" class="map-overlay">
@@ -60,14 +39,13 @@
     <div id="reward-modal" class="reward-modal">
         <div class="reward-content">
             <h3>Goal Reached! 🎉</h3>
-            <p>You've watched 10 videos and learned enough for today. Time to turn that knowledge into real-world
-                impact.</p>
-            <button class="action-btn" onclick="openPanel('protests')">Find Local Actions</button>
+            <p>You've watched 7 videos and learned enough for today. Time to turn that knowledge into real-world impact.</p>
+            <button class="action-btn" onclick="openNewPage('Protests')">Find Local Actions</button>
+            <button class="secondary-btn" onclick="closeRewardModal()">Keep Watching</button>
         </div>
     </div>
 
     <script src="https://unpkg.com/feather-icons"></script>
     <script src="script.js"></script>
 </body>
-
 </html>
