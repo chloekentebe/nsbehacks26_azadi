@@ -13,6 +13,7 @@
             <h1 class="brand">azadi</h1>
             <span class="tagline">knowledge is power</span>
         </div>
+        <button type="button" id="header-auth-btn" onclick="openAuthModal()" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); padding:8px 14px; border-radius:6px; border:1px solid #333; background:transparent; cursor:pointer; font-size:14px;">Log in</button>
     </header>
 
     <div class="impact-bar-container">
@@ -42,6 +43,18 @@
             <p>You've watched 7 videos and learned enough for today. Time to turn that knowledge into real-world impact.</p>
             <button class="action-btn" onclick="openNewPage('Protests')">Find Local Actions</button>
             <button class="secondary-btn" onclick="closeRewardModal()">Keep Watching</button>
+        </div>
+    </div>
+
+    <div id="auth-modal" class="reward-modal">
+        <div class="reward-content">
+            <h3 id="auth-modal-title">Log in</h3>
+            <p class="panel-message" id="auth-message" style="margin-bottom:8px;"></p>
+            <input type="email" id="auth-email" placeholder="Email" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ccc; border-radius:6px;">
+            <input type="password" id="auth-password" placeholder="Password (min 6)" style="width:100%; padding:10px; margin-bottom:12px; border:1px solid #ccc; border-radius:6px;">
+            <button class="action-btn" onclick="submitAuth()">Log in</button>
+            <button class="secondary-btn" onclick="toggleAuthMode()" id="auth-toggle-btn">Create account</button>
+            <button class="secondary-btn" onclick="closeAuthModal()" style="margin-top:6px;">Cancel</button>
         </div>
     </div>
 
