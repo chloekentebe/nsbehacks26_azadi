@@ -13,8 +13,8 @@ const baseVideo = {
     lng: -79.347015
 };
 
-// Generate 12 placeholder videos for the demo
-const videoData = Array.from({ length: 12 }, (_, i) => ({
+// 10 Videos
+const videoData = Array.from({ length: 10 }, (_, i) => ({
     id: i + 1,
     ...baseVideo
 }));
@@ -22,31 +22,56 @@ const videoData = Array.from({ length: 12 }, (_, i) => ({
 const feed = document.getElementById('video-feed');
 const impactFill = document.getElementById('impact-fill');
 let goalReached = false;
-
-// We will track unique videos watched to fill the meter
 const viewedVideos = new Set();
 
-// 2. Inject Videos into the Feed
+// GLOBAL AUDIO STATE (Defaults to true/muted)
+let isGlobalMuted = true;
+
+// Inject Videos & Expanding Side Column Row
 videoData.forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'video-card';
-    card.setAttribute('data-id', item.id); // Tag it with an ID to track views
-    card.innerHTML = `
-        <video loop muted playsinline src="${item.url}"></video>
-        <a href="${item.sourceUrl}" target="_blank" class="creator-badge">
-            <span>via Instagram</span>
-            <strong>${item.creator}</strong>
-        </a>
-        <div class="action-overlay">
-            <h4>${item.hashtag}</h4>
-            <p>${item.desc}</p>
-            <button class="action-btn" onclick="openMap(${item.lat}, ${item.lng})">📍 View Local Impact Map</button>
+    const row = document.createElement('div');
+    row.className = 'feed-item-row';
+    row.setAttribute('data-id', item.id);
+    
+    row.innerHTML = `
+        <div class="video-card">
+            <video loop muted playsinline src="${item.url}"></video>
+            
+            <button class="sound-toggle" onclick="toggleGlobalSound()">
+                <i data-feather="volume-x"></i>
+            </button>
+            
+            <a href="${item.sourceUrl}" target="_blank" class="creator-badge">
+                <span>via Instagram</span>
+                <strong>${item.creator}</strong>
+            </a>
+            
+            <div class="action-overlay">
+                <h4>${item.hashtag}</h4>
+                <p>${item.desc}</p>
+                <button class="action-btn" onclick="openMap(${item.lat}, ${item.lng})">📍 View Local Impact Map</button>
+            </div>
+        </div>
+        
+        <div class="side-column-container">
+            <div class="side-menu-expanded">
+                <button class="side-icon" onclick="openNewPage('Forums')" title="Forums"><i data-feather="message-square"></i></button>
+                <button class="side-icon" onclick="openNewPage('Articles')" title="Articles"><i data-feather="book-open"></i></button>
+                <button class="side-icon" onclick="openNewPage('Charities')" title="Charities"><i data-feather="heart"></i></button>
+                <button class="side-icon" onclick="openNewPage('Protests')" title="Protests"><i data-feather="map-pin"></i></button>
+                <button class="side-icon" onclick="openNewPage('Create')" title="Create"><i data-feather="plus-circle"></i></button>
+            </div>
+            <button class="side-icon menu-trigger" title="More Options">
+                <i data-feather="plus"></i>
+            </button>
         </div>
     `;
-    feed.appendChild(card);
+    feed.appendChild(row);
 });
 
-// 3. Auto Play/Pause & Count 10 Videos
+feather.replace();
+
+// Play/Pause & Scroll Logic
 const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
         const video = entry.target.querySelector('video');
@@ -55,18 +80,15 @@ const observer = new IntersectionObserver(entries => {
         if (entry.isIntersecting) {
             video.play();
 
-            // Logic for the 10-Video Anti-Doom Scrolling Limit
             if (!viewedVideos.has(videoId)) {
                 viewedVideos.add(videoId);
+                const viewCount = viewedVideos.size;
 
-                // Calculate progress based on watching 10 videos (10% per video)
-                let progress = (viewedVideos.size / 10) * 100;
+                let progress = (viewCount / 7) * 100;
                 impactFill.style.width = Math.min(100, progress) + "%";
 
-                // Trigger exactly when 10 unique videos are hit
-                if (viewedVideos.size === 10 && !goalReached) {
+                if (viewCount === 7 && !goalReached) {
                     goalReached = true;
-                    // Wait half a second so they can see the video start before popping up the reward
                     setTimeout(() => {
                         document.getElementById('reward-modal').classList.add('active');
                     }, 800);
@@ -78,26 +100,52 @@ const observer = new IntersectionObserver(entries => {
     });
 }, { threshold: 0.6 });
 
-document.querySelectorAll('.video-card').forEach(card => observer.observe(card));
+document.querySelectorAll('.feed-item-row').forEach(row => observer.observe(row));
 
-// 4. Slide-Over Panel Logic
-function openPanel(type) {
-    document.getElementById('panel-title').innerText = type;
-    document.getElementById('panel-body').innerHTML = `<p>Coming soon...</p>`;
-    document.getElementById('content-panel').classList.add('active');
+// GLOBAL SOUND TOGGLE 
+function toggleGlobalSound() {
+    isGlobalMuted = !isGlobalMuted; 
+    
+    // 1. Update EVERY video tag
+    document.querySelectorAll('video').forEach(video => {
+        video.muted = isGlobalMuted;
+    });
+    
+    // 2. Rewrite the icon HTML so Feather can redraw the correct SVG
+    document.querySelectorAll('.sound-toggle').forEach(btn => {
+        if (isGlobalMuted) {
+            btn.innerHTML = '<i data-feather="volume-x"></i>'; // Sound Off
+        } else {
+            btn.innerHTML = '<i data-feather="volume-2"></i>'; // Sound On
+        }
+    });
+    
+    // 3. Force Feather to draw the new icons
+    feather.replace(); 
+}
+
+// BRAND NEW PAGE LOGIC
+function openNewPage(pageName) {
+    document.getElementById('new-page-title').innerText = pageName;
+    document.getElementById('new-page-content').innerHTML = `<h2>Welcome to the ${pageName} section.</h2><p>Data loading...</p>`;
+
+    // Shows the pure white full-screen layer
+    document.getElementById('white-page').classList.add('active');
     document.getElementById('reward-modal').classList.remove('active');
 }
 
-function closePanel() {
-    document.getElementById('content-panel').classList.remove('active');
+function closeNewPage() {
+    document.getElementById('white-page').classList.remove('active');
 }
 
-// 5. Map Logic Placeholders
+function closeRewardModal() {
+    document.getElementById('reward-modal').classList.remove('active');
+}
+
+// MAP Logic (Placeholders)
 function openMap(lat, lng) {
     document.getElementById('map-overlay').classList.add('active');
-    // Map code commented out previously goes here
 }
-
 function closeMap() {
     document.getElementById('map-overlay').classList.remove('active');
 }

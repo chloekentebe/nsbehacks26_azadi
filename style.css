@@ -1,8 +1,8 @@
 :root {
-    --blue-1: #cfecf7; 
-    --blue-2: #a0d9ef; 
+    --blue-1: #cfecf7;
+    --blue-2: #a0d9ef;
     --blue-3: #62c1e5;
-    --blue-4: #20a7db; 
+    --blue-4: #20a7db;
     --blue-5: #1c96c5;
     --action-orange: #FFB84D;
 }
@@ -10,139 +10,431 @@
 body {
     background: linear-gradient(135deg, #cfecf7, #62c1e5, #1c96c5);
     background-attachment: fixed;
-    margin: 0; 
+    margin: 0;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    overflow: hidden; 
+    overflow: hidden;
 }
 
-/* Desktop Header */
+/* ---------------- HEADER & BRANDING ---------------- */
 .desktop-header {
-    position: fixed; top: 0; left: 0; width: 100%;
-    padding: 20px 50px; box-sizing: border-box;
-    display: flex; justify-content: space-between; align-items: center;
-    background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px);
-    z-index: 200; border-bottom: 1px solid rgba(255,255,255,0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    z-index: 200;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.brand-container { display: flex; flex-direction: column; }
+.brand-container {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    top: 15px;
+    pointer-events: none;
+}
 
-/* AESTHETIC LOGO */
 .brand {
-    font-family: 'Outfit', sans-serif;
-    color: #ffffff; 
-    font-weight: 800; /* Extra bold */
-    font-size: 52px; /* Slightly larger to fit the new font */
-    line-height: 0.9; 
-    margin: 0; 
-    letter-spacing: -2px; /* Tight letter spacing is very trendy right now */
-    text-shadow: 0 4px 8px rgba(0,0,0,0.4);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 56px;
+    line-height: 1;
+    margin: 0;
+    letter-spacing: 6px;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .tagline {
-    font-family: 'Outfit', sans-serif;
-    color: #ffffff; 
-    font-size: 14px; 
-    text-transform: lowercase; 
-    letter-spacing: 3px; /* Wide spacing contrasts the tight logo */
-    margin-top: 6px; 
-    font-weight: 500;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.9); 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    text-transform: lowercase;
+    letter-spacing: 4px;
+    margin-top: 6px;
+    font-weight: 400;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.top-nav { display: flex; gap: 30px; align-items: center; }
-
-/* AESTHETIC ICONS */
-.nav-icon {
-    color: white; cursor: pointer; transition: transform 0.2s, color 0.2s;
-    display: flex; align-items: center; justify-content: center;
-}
-.nav-icon i { width: 28px; height: 28px; stroke-width: 2px; }
-.nav-icon:hover { transform: scale(1.15); color: var(--blue-2); }
-
-/* Global Impact Meter */
+/* ---------------- VIDEO FEED & LAYOUT ---------------- */
 .impact-bar-container {
-    position: fixed; top: 105px; left: 0; width: 100%;
-    height: 6px; background: rgba(0,0,0,0.2); z-index: 150;
+    position: fixed;
+    top: 100px;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    z-index: 150;
 }
 
 .impact-fill {
-    width: 0%; height: 100%; background: var(--action-orange); /* Changed meter to match button */
+    width: 0%;
+    height: 100%;
+    background: var(--action-orange);
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 0 15px var(--action-orange);
 }
 
-/* Centered Desktop Video Feed */
 .desktop-feed-container {
-    height: 100vh; width: 100%; 
-    padding-top: 140px; 
-    box-sizing: border-box; overflow-y: scroll; 
-    scroll-snap-type: y mandatory; scrollbar-width: none; 
+    height: 100vh;
+    width: 100%;
+    padding-top: 140px;
+    box-sizing: border-box;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
 }
-.desktop-feed-container::-webkit-scrollbar { display: none; }
+
+.desktop-feed-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* The Row that holds the Video AND the Side Column */
+.feed-item-row {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 20px;
+    width: 100%;
+    max-width: 600px;
+    /* Wider to fit everything */
+    margin: 0 auto 40px auto;
+    scroll-snap-align: center;
+}
 
 .video-card {
-    height: calc(100vh - 180px); 
-    width: 100%; max-width: 420px; 
-    margin: 0 auto 40px auto; 
-    scroll-snap-align: center; position: relative; border-radius: 24px;
-    background: #000; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    height: calc(100vh - 180px);
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    border-radius: 24px;
+    background: #000;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
-video { width: 100%; height: 100%; object-fit: cover; }
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ---------------- THE EXPANDING SIDE COLUMN ---------------- */
+.side-column-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 10px;
+    /* Aligns visually with the bottom of the video */
+}
+
+.side-menu-expanded {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    /* Space between the hidden icons */
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.4s ease, margin-bottom 0.4s ease;
+}
+
+/* HOVER TRIGGER: Expands the column upward */
+.side-column-container:hover .side-menu-expanded {
+    max-height: 400px;
+    /* Opens the container tall enough for 5 icons */
+    opacity: 1;
+    margin-bottom: 15px;
+    /* Pushes the main plus button down slightly */
+}
+
+.side-icon {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.2s, background 0.2s, color 0.2s;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+    /* Prevents the circles from squishing during animation */
+}
+
+.side-icon i {
+    width: 26px;
+    height: 26px;
+    stroke-width: 2px;
+}
+
+.side-icon:hover {
+    background: var(--action-orange);
+    color: #111;
+    transform: scale(1.1);
+}
+
+/* The Plus Button that triggers the hover */
+.menu-trigger {
+    z-index: 2;
+}
+
+.side-column-container:hover .menu-trigger {
+    background: var(--action-orange);
+    color: #111;
+    transform: rotate(45deg);
+    /* Turns the plus into an X when opened */
+}
+
+/* ---------------- OVERLAYS & BUTTONS ---------------- */
+.sound-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    border: none;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+    transition: transform 0.2s;
+}
+
+.sound-toggle:hover {
+    transform: scale(1.1);
+    color: var(--action-orange);
+}
 
 .creator-badge {
-    position: absolute; top: 20px; left: 20px;
-    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
-    padding: 8px 16px; border-radius: 20px; color: white;
-    text-decoration: none; display: flex; flex-direction: column; z-index: 50;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: white;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
 }
-.creator-badge span { font-size: 10px; opacity: 0.8; text-transform: uppercase; }
-.creator-badge strong { font-size: 14px; color: var(--blue-2); }
+
+.creator-badge span {
+    font-size: 10px;
+    opacity: 0.8;
+    text-transform: uppercase;
+}
+
+.creator-badge strong {
+    font-size: 14px;
+    color: var(--blue-2);
+}
 
 .action-overlay {
-    position: absolute; bottom: 0; left: 0; width: 100%;
-    background: linear-gradient(transparent, rgba(0,0,0,0.95)); 
-    padding: 40px 20px 20px; box-sizing: border-box;
-    display: flex; flex-direction: column; gap: 10px; z-index: 50;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.95));
+    padding: 40px 20px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 50;
 }
-.action-overlay h4 { margin: 0; color: #fff; font-size: 18px; }
-.action-overlay p { margin: 0; font-size: 14px; color: rgba(255,255,255,0.8); }
 
-/* ORANGE ACTION BUTTON */
+.action-overlay h4 {
+    margin: 0;
+    color: #fff;
+    font-size: 18px;
+}
+
+.action-overlay p {
+    margin: 0;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
 .action-btn {
-    width: 100%; padding: 16px; border: none; border-radius: 12px;
-    background: var(--action-orange); color: #111; /* Dark text reads better on orange */
-    font-weight: 800; cursor: pointer; font-size: 16px; margin-top: 10px;
-    transition: transform 0.2s, box-shadow 0.2s;
-    text-transform: uppercase; letter-spacing: 1px;
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    background: var(--action-orange);
+    color: #111;
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+    transition: transform 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
-.action-btn:hover { transform: scale(1.02); box-shadow: 0 5px 15px rgba(253, 147, 25, 0.4); }
 
-/* Panel, Map, and Modal (Same as before) */
-.desktop-side-panel {
-    position: fixed; top: 0; right: -450px; width: 450px; height: 100vh;
-    background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px);
-    z-index: 300; transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    display: flex; flex-direction: column; box-shadow: -10px 0 30px rgba(0,0,0,0.2);
+.action-btn:hover {
+    transform: scale(1.02);
 }
-.desktop-side-panel.active { right: 0; }
-.panel-header { padding: 40px 30px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--blue-1); }
-.panel-header h2 { margin: 0; font-weight: 300; color: var(--blue-5); font-size: 28px;}
-.back-btn { background: none; border: none; font-size: 32px; color: #333; cursor: pointer; }
-.panel-body { padding: 30px; overflow-y: auto; flex-grow: 1; }
 
+/* ---------------- THE NEW WHITE PAGE OVERLAY ---------------- */
+.white-page-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: #ffffff;
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+}
+
+.white-page-overlay.active {
+    display: flex;
+}
+
+.white-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px 50px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.page-title {
+    font-size: 36px;
+    font-weight: bold;
+    color: #111;
+    text-transform: capitalize;
+    margin: 0;
+}
+
+.return-brand {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: 6px;
+    color: var(--blue-5);
+    cursor: pointer;
+    margin: 0;
+    transition: opacity 0.2s;
+}
+
+.return-brand:hover {
+    opacity: 0.7;
+}
+
+.page-content {
+    padding: 50px;
+    flex-grow: 1;
+    overflow-y: auto;
+    font-size: 18px;
+    color: #333;
+}
+
+/* ---------------- MAP & REWARD MODAL ---------------- */
 .map-overlay {
-    position: fixed; top: 100%; left: 0; width: 100%; height: 100vh;
-    background: white; z-index: 400; transition: top 0.4s ease;
+    position: fixed;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: white;
+    z-index: 400;
+    transition: top 0.4s ease;
 }
-.map-overlay.active { top: 0; }
-#map { height: 100%; width: 100%; }
-.close-map { position: absolute; top: 30px; right: 40px; z-index: 410; background: white; border-radius: 50%; width: 50px; height: 50px; border: none; font-size: 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; }
+
+.map-overlay.active {
+    top: 0;
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+.close-map {
+    position: absolute;
+    top: 30px;
+    right: 40px;
+    z-index: 410;
+    background: white;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    border: none;
+    font-size: 28px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
 
 .reward-modal {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
-    background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 500;
-    display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 500;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
 }
-.reward-modal.active { opacity: 1; pointer-events: auto; }
-.reward-content { background: white; padding: 50px; border-radius: 24px; width: 400px; text-align: center; border: 4px solid var(--action-orange); }
-.reward-content h3 { color: #111; margin-top: 0; font-size: 26px;}
+
+.reward-modal.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.reward-content {
+    background: white;
+    padding: 50px;
+    border-radius: 24px;
+    width: 400px;
+    text-align: center;
+    border: 4px solid var(--action-orange);
+}
+
+.reward-content h3 {
+    color: #111;
+    margin-top: 0;
+    font-size: 26px;
+}
+
+.secondary-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    color: #666;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    text-transform: uppercase;
+}
+
+.secondary-btn:hover {
+    color: #111;
+    text-decoration: underline;
+}
