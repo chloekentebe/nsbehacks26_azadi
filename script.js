@@ -1,24 +1,111 @@
 // Initialize Feather Icons
 feather.replace();
 
-// 1. Video Data Array (Duplicated 12 times so you can test the 10-video limit)
-// In a real app, these would be 12 distinct videos.
-const baseVideo = {
-    url: 'assets/foodSov.mp4',
-    creator: '@fortheculture',
-    sourceUrl: 'https://www.instagram.com/reel/DS-VfLmE8Q1/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
-    hashtag: '#foodsovereignty #blackfarmer',
-    desc: 'Learn more about black food sovereignty and how land is being used and controlled in Africa.',
-    lat: 43.651070,  // Coordinates for Map
-    lng: -79.347015
-};
+// 10 distinct videos
+const videoData = [
+    {
+        id: 1,
+        url: 'assets/foodSov.mp4',
+        creator: '@fortheculture',
+        sourceUrl: 'https://www.instagram.com/p/DU1Wrs1kWDf/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
+        desc: 'Black food sovereignty and how land is being used and controlled in Africa.',
+        lat: 2.0,       // Center of Africa
+        lng: 16.0,
+        zoom: 3         // Zoomed out
+    },
+    {
+        id: 2,
+        url: 'assets/blackSurg.mp4',
+        creator: '@blklivesmatter',
+        sourceUrl: 'https://www.instagram.com/p/DU1Wrs1kWDf/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
+        desc: 'Black history being written by five Black surgeons at Johns Hopkins Hospital.',
+        lat: 39.2971,
+        lng: -76.5922,
+        zoom: 15
+    },
+    {
+        id: 3,
+        url: 'assets/yaleHist.mp4', // Reusing video2 until you download a 3rd
+        creator: '@kahil.greene',
+        sourceUrl: 'https://www.instagram.com/reel/DRe-cLqjgoj/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
+        desc: 'An erased chapter of Black history at Yale University.',
+        lat: 41.3163,
+        lng: -72.9223,
+        zoom: 15
+    },
+    {
+        id: 4,
+        url: 'assets/sudan.mp4',
+        creator: '@wearthepeace',
+        sourceUrl: 'https://www.instagram.com/reel/DRnDQqAAfYe/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
+        desc: `An atrocious cruelty inflicted on Sudanese women at the frontline of Sudan's civil war from BBC News.`,
+        lat: 15.5527,   // Roughly the geographic center of Sudan
+        lng: 30.2176,
+        zoom: 5
+    },
+    {
+        id: 5,
+        url: 'assets/somalia.mp4',
+        creator: '@okuntakinte',
+        sourceUrl: 'https://www.instagram.com/reel/DUYDFjjiMsu/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
+        desc: 'Clip of a child marriange ceremony in Somalia.',
+        lat: 5.1521,    // Roughly the geographic center of Somalia
+        lng: 46.1996,
+        zoom: 5         // Zoomed out to frame the Horn of Africa
+    },
+    {
+        id: 6,
+        url: 'assets/iran.mp4',
+        creator: '@iamnazaninour',
+        sourceUrl: 'https://www.instagram.com/reel/DUlqs0jkiso/?utm_source=ig_web_copy_link&igsh=NTc4MTIwNjQ2YQ==',
+        desc: 'True history behinnd the Anniversary of the Islamic Revolution in Iran.',
+        lat: 32.4279,   // Roughly the geographic center of Iran
+        lng: 53.6880,
+        zoom: 5         // Zoomed out to frame the entire country
+    },
+    {
+        id: 7,
+        url: 'assets/afghan.mp4',
+        creator: '@shabnamnasimi',
+        sourceUrl: 'https://www.instagram.com/reel/DUquo8ukg2O/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
+        desc: 'Legalization of slavery in Afghanistan under the Taliban regime.',
+        lat: 33.9391,   // Geographic center of Afghanistan
+        lng: 67.7100,
+        zoom: 5         // Zoomed out to frame the entire country
+    },
+    {
+        id: 8,
+        url: 'assets/women.mp4',
+        creator: '@marketingminutes',
+        sourceUrl: 'https://www.instagram.com/reel/DSmEpdul5GS/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
+        desc: `Nike's Dream Crazier campaign that showcases the harsh reality of being a women in sport.`,
+        lat: 34.1026,   // Dolby Theatre, Los Angeles
+        lng: -118.3404,
+        zoom: 15        // Zoomed in enough to see the heart of Hollywood
+    },
+    {
+        id: 9,
+        url: 'assets/ai.mp4',
+        creator: '@aiconversation',
+        sourceUrl: 'https://www.instagram.com/reel/DRPLymtAf69/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
+        desc: `Deutsche Telekom's AI awareness campaign that highlights the dangers of sharing personal information online.`,
+        lat: 50.7078,   // Deutsche Telekom Headquarters
+        lng: 7.1285,
+        zoom: 15        // Zoomed in to see the campus and surrounding streets
+    },
+    {
+        id: 10,
+        url: 'assets/current.mp4',
+        creator: '@andrea_mizrahi',
+        sourceUrl: 'https://www.instagram.com/reel/DUjOWvEicBS/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
+        desc: 'Memetic warfare and its presence on social media.',
+        lat: 40.7145,   // Foley Square / Federal Courthouses in Lower Manhattan
+        lng: -74.0010,
+        zoom: 16        // Zoomed in tightly on the legal district
+    }
+];
 
-// 10 Videos
-const videoData = Array.from({ length: 10 }, (_, i) => ({
-    id: i + 1,
-    ...baseVideo
-}));
-
+// 3. Build the 10-Video Feed
 const feed = document.getElementById('video-feed');
 const impactFill = document.getElementById('impact-fill');
 let goalReached = false;
@@ -35,22 +122,36 @@ videoData.forEach(item => {
 
     row.innerHTML = `
         <div class="video-card">
-            <video loop muted playsinline src="${item.url}"></video>
             
-            <button class="sound-toggle" onclick="toggleGlobalSound()">
-                <i data-feather="volume-x"></i>
-            </button>
-            
-            <a href="${item.sourceUrl}" target="_blank" class="creator-badge">
-                <span>via Instagram</span>
-                <strong>${item.creator}</strong>
-            </a>
-            
-            <div class="action-overlay">
-                <h4>${item.hashtag}</h4>
-                <p>${item.desc}</p>
-                <button class="action-btn" onclick="openMap(${item.lat}, ${item.lng})">📍 View Local Impact Map</button>
+            <div class="video-container">
+                <video loop muted playsinline src="${item.url}"></video>
+                
+                <div class="custom-video-controls">
+                    <button class="control-btn sound-toggle" onclick="toggleGlobalSound()" title="Mute/Unmute">
+                        <i data-feather="volume-x"></i>
+                    </button>
+                    <button class="control-btn play-toggle" onclick="togglePlay(this)" title="Play/Pause">
+                        <i data-feather="pause"></i>
+                    </button>
+                    <button class="control-btn" onclick="skipVideo(this, -5)" title="Rewind 5s">
+                        <i data-feather="rewind"></i>
+                    </button>
+                    <button class="control-btn" onclick="skipVideo(this, 5)" title="Forward 5s">
+                        <i data-feather="fast-forward"></i>
+                    </button>
+                </div>
+                
+                <a href="${item.sourceUrl}" target="_blank" class="instagram-link">
+                    <i data-feather="instagram"></i> Instagram
+                </a>
             </div>
+            
+            <div class="info-section">
+                <h3 class="creator-name">${item.creator}</h3>
+                <p>${item.desc}</p>
+                <button class="action-btn" onclick="openMap(${item.lat}, ${item.lng}, ${item.zoom})">📍 View Local Impact Map</button>
+            </div>
+
         </div>
         
         <div class="side-column-container">
@@ -82,12 +183,16 @@ const observer = new IntersectionObserver(entries => {
             video.play();
             if (videoId) viewedVideos.add(String(videoId));
 
+            // Ensure the button shows the "Pause" icon since the video is playing
+            const playBtn = entry.target.querySelector('.play-toggle');
+            if (playBtn) { playBtn.innerHTML = '<i data-feather="pause"></i>'; feather.replace(); }
+
             // DYNAMIC IMPACT METER: Moves up AND down based on where you are
-            let progress = (videoId / 7) * 100;
+            let progress = (videoId / 5) * 100; // Changed from 7 to 5
             impactFill.style.width = Math.min(100, progress) + "%";
 
-            // Trigger Goal Reached Modal at video 7 (only triggers once)
-            if (videoId === 7 && !goalReached) {
+            // Trigger Goal Reached Modal at video 5
+            if (videoId === 5 && !goalReached) { // Changed from 7 to 5
                 goalReached = true;
                 setTimeout(() => {
                     document.getElementById('reward-modal').classList.add('active');
@@ -124,7 +229,6 @@ function toggleGlobalSound() {
 }
 
 // BRAND NEW PAGE LOGIC
-// BRAND NEW PAGE LOGIC & MOCK DATA
 const pageContentData = {
     'Forums': `
         <div class="dashboard-grid">
@@ -817,12 +921,64 @@ function closeRewardModal() {
     document.getElementById('reward-modal').classList.remove('active');
 }
 
-// MAP Logic (Placeholders)
-function openMap(lat, lng) {
+// MAP LOGIC (LEAFLET + OPENSTREETMAP)
+let map;
+let currentMarker;
+
+function openMap(lat, lng, zoomLevel) {
+    // 1. Slide the map overlay up
     document.getElementById('map-overlay').classList.add('active');
+
+    // 2. Wait 400ms for the CSS slide animation to finish
+    setTimeout(() => {
+        // If this is the first time opening the map, create it
+        if (!map) {
+            // Initialize the map and set the camera
+            map = L.map('map').setView([lat, lng], zoomLevel);
+
+            // Load the free OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+        } else {
+            // If the map already exists, just move the camera
+            map.setView([lat, lng], zoomLevel);
+        }
+
+        // 3. Fix a common glitch where hidden maps don't load their tiles properly
+        map.invalidateSize();
+
+        // 4. Remove the old pin and drop a new one
+        if (currentMarker) {
+            map.removeLayer(currentMarker);
+        }
+        currentMarker = L.marker([lat, lng]).addTo(map);
+
+    }, 400);
 }
+
 function closeMap() {
+    // Slides the overlay back down
     document.getElementById('map-overlay').classList.remove('active');
+}
+
+// CUSTOM VIDEO CONTROLS LOGIC (partner GUI: pause, fast-forward, rewind)
+function togglePlay(btn) {
+    const video = btn.closest('.video-card').querySelector('video');
+
+    if (video.paused) {
+        video.play();
+        btn.innerHTML = '<i data-feather="pause"></i>';
+    } else {
+        video.pause();
+        btn.innerHTML = '<i data-feather="play"></i>';
+    }
+    feather.replace();
+}
+
+function skipVideo(btn, seconds) {
+    const video = btn.closest('.video-card').querySelector('video');
+    video.currentTime += seconds;
 }
 
 // Restore auth on load
