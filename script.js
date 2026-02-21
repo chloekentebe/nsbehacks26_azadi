@@ -626,6 +626,8 @@ function getFromCache(cache, key) {
     return null;
 }
 
+// TODO: Article and charity functionality needs to be adjusted to suit each specific reel
+// (e.g. per-reel topics, hashtags, or context so recommendations match the current reel).
 async function loadArticleRecommendations() {
     if (articlesAbortController) articlesAbortController.abort();
     articlesAbortController = new AbortController();
@@ -635,7 +637,7 @@ async function loadArticleRecommendations() {
     const issues = [];
     viewedVideos.forEach((id) => {
         const video = videoData.find((v) => String(v.id) === String(id));
-        if (video) issues.push(`${video.hashtag} — ${video.desc}`);
+        if (video) issues.push(`${video.creator || ''} — ${video.desc || ''}`);
     });
 
     if (issues.length === 0) {
@@ -712,6 +714,7 @@ function renderArticleCards(panelBody, list) {
     `;
 }
 
+// TODO: Charity recommendations should be adjusted per reel (see article TODO above).
 async function loadCharityRecommendations() {
     if (charitiesAbortController) charitiesAbortController.abort();
     charitiesAbortController = new AbortController();
@@ -721,7 +724,7 @@ async function loadCharityRecommendations() {
     const issues = [];
     viewedVideos.forEach((id) => {
         const video = videoData.find((v) => String(v.id) === String(id));
-        if (video) issues.push(`${video.hashtag} — ${video.desc}`);
+        if (video) issues.push(`${video.creator || ''} — ${video.desc || ''}`);
     });
 
     if (issues.length === 0) {
@@ -806,7 +809,7 @@ function showProtestsPanel(selectedCity) {
     const issues = [];
     viewedVideos.forEach((id) => {
         const video = videoData.find((v) => String(v.id) === String(id));
-        if (video) issues.push(`${video.hashtag} — ${video.desc}`);
+        if (video) issues.push(`${video.creator || ''} — ${video.desc || ''}`);
     });
 
     const toggleHtml = `
