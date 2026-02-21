@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>azadi - knowledge is power</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header class="desktop-header">
+        <div class="brand-container">
+            <h1 class="brand">azadi</h1>
+            <span class="tagline">knowledge is power</span>
+        </div>
+
+        <nav class="top-nav">
+            <div class="nav-icon" onclick="openPanel('articles')" title="Articles">
+                <i data-feather="book-open"></i>
+            </div>
+            <div class="nav-icon" onclick="openPanel('charities')" title="Charities">
+                <i data-feather="heart"></i>
+            </div>
+            <div class="nav-icon" onclick="openPanel('discussions')" title="Discussions">
+                <i data-feather="message-circle"></i>
+            </div>
+            <div class="nav-icon" onclick="openPanel('protests')" title="Protests">
+                <i data-feather="map-pin"></i>
+            </div>
+        </nav>
+    </header>
+
+    <div class="impact-bar-container">
+        <div id="impact-fill" class="impact-fill"></div>
+    </div>
+
+    <main class="desktop-feed-container" id="video-feed">
+    </main>
+
+    <div id="content-panel" class="desktop-side-panel">
+        <header class="panel-header">
+            <button onclick="closePanel()" class="back-btn">×</button>
+            <h2 id="panel-title">articles</h2>
+        </header>
+        <div id="panel-body" class="panel-body"></div>
+    </div>
+
+    <div id="map-overlay" class="map-overlay">
+        <button onclick="closeMap()" class="close-map">×</button>
+        <div id="map"></div>
+    </div>
+
+    <div id="reward-modal" class="reward-modal">
+        <div class="reward-content">
+            <h3>Goal Reached! 🎉</h3>
+            <p>You've watched 10 videos and learned enough for today. Time to turn that knowledge into real-world
+                impact.</p>
+            <button class="action-btn" onclick="openPanel('protests')">Find Local Actions</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
