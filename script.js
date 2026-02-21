@@ -182,16 +182,16 @@ const observer = new IntersectionObserver(entries => {
         if (entry.isIntersecting) {
             video.play();
 
-            // NEW: Ensure the button shows the "Pause" icon since the video is playing
+            // Ensure the button shows the "Pause" icon since the video is playing
             const playBtn = entry.target.querySelector('.play-toggle');
             if (playBtn) { playBtn.innerHTML = '<i data-feather="pause"></i>'; feather.replace(); }
 
             // DYNAMIC IMPACT METER: Moves up AND down based on where you are
-            let progress = (videoId / 7) * 100;
+            let progress = (videoId / 5) * 100; // Changed from 7 to 5
             impactFill.style.width = Math.min(100, progress) + "%";
 
-            // Trigger Goal Reached Modal at video 7 (only triggers once)
-            if (videoId === 7 && !goalReached) {
+            // Trigger Goal Reached Modal at video 5
+            if (videoId === 5 && !goalReached) { // Changed from 7 to 5
                 goalReached = true;
                 setTimeout(() => {
                     document.getElementById('reward-modal').classList.add('active');
@@ -228,7 +228,6 @@ function toggleGlobalSound() {
 }
 
 // BRAND NEW PAGE LOGIC
-// BRAND NEW PAGE LOGIC & MOCK DATA
 const pageContentData = {
     'Forums': `
         <div class="dashboard-grid">
@@ -338,13 +337,47 @@ function closeRewardModal() {
     document.getElementById('reward-modal').classList.remove('active');
 }
 
-// MAP Logic (Placeholders)
-function openMap(lat, lng) {
+// MAP LOGIC (LEAFLET + OPENSTREETMAP)
+let map;
+let currentMarker;
+
+function openMap(lat, lng, zoomLevel) {
+    // 1. Slide the map overlay up
     document.getElementById('map-overlay').classList.add('active');
+
+    // 2. Wait 400ms for the CSS slide animation to finish
+    setTimeout(() => {
+        // If this is the first time opening the map, create it
+        if (!map) {
+            // Initialize the map and set the camera
+            map = L.map('map').setView([lat, lng], zoomLevel);
+
+            // Load the free OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+        } else {
+            // If the map already exists, just move the camera
+            map.setView([lat, lng], zoomLevel);
+        }
+
+        // 3. Fix a common glitch where hidden maps don't load their tiles properly
+        map.invalidateSize();
+
+        // 4. Remove the old pin and drop a new one
+        if (currentMarker) {
+            map.removeLayer(currentMarker);
+        }
+        currentMarker = L.marker([lat, lng]).addTo(map);
+
+    }, 400);
 }
+
 function closeMap() {
+    // Slides the overlay back down
     document.getElementById('map-overlay').classList.remove('active');
 }
+
 // CUSTOM VIDEO CONTROLS LOGIC
 function togglePlay(btn) {
     // Finds the video connected to this specific button

@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>azadi - knowledge is power</title>
     <link rel="stylesheet" href="style.css">
-</head>
-<body>
 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+
+<body>
     <header class="desktop-header">
         <div class="brand-container">
             <h1 class="brand">azadi</h1>
@@ -20,7 +23,7 @@
     </div>
 
     <main class="desktop-feed-container" id="video-feed">
-        </main>
+    </main>
 
     <div id="white-page" class="white-page-overlay">
         <header class="white-header">
@@ -28,7 +31,7 @@
             <h1 class="return-brand" onclick="closeNewPage()">azadi</h1>
         </header>
         <div id="new-page-content" class="page-content">
-            </div>
+        </div>
     </div>
 
     <div id="map-overlay" class="map-overlay">
@@ -39,13 +42,16 @@
     <div id="reward-modal" class="reward-modal">
         <div class="reward-content">
             <h3>Goal Reached! 🎉</h3>
-            <p>You've watched 7 videos and learned enough for today. Time to turn that knowledge into real-world impact.</p>
+            <p>You've watched 5 videos and learned enough for today. Time to turn that knowledge into real-world impact.
+            </p>
             <button class="action-btn" onclick="openNewPage('Protests')">Find Local Actions</button>
             <button class="secondary-btn" onclick="closeRewardModal()">Keep Watching</button>
         </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
     <script src="script.js"></script>
 </body>
+
 </html>
