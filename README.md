@@ -18,7 +18,7 @@ Instead of just scrolling past trauma, people need a dedicated platform where th
 
 ## 💡 The Solution
 **azadi** solves this by combining a highly engaging Web2 user experience with seamless Web3 infrastructure:
-* **Educate:** Users scroll through a curated feed of educational short-form videos focusing on mutual aid, human rights, and community organizing.
+* **Educate:** Users scroll through a curated feed of a maximum of 10 educational short-form videos focusing on mutual aid, human rights, and community organizing.
 * **Localize:** Users can pull up an interactive, free map to find the location of the place mentioned in the video.
 * **Act & Verify:** When users RSVP to a local action, they mint an immutable **Proof-of-Action Badge** directly on the XRPL.
 
