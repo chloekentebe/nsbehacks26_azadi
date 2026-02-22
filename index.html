@@ -16,15 +16,17 @@
             <h1 class="brand">azadi</h1>
             <span class="tagline">knowledge is power</span>
         </div>
-        <button class="theme-toggle" onclick="toggleRugTheme()" title="Toggle Background">
-            <i data-feather="image"></i>
-        </button>
-        <div class="header-auth-wrap" id="header-auth-wrap">
-            <button type="button" id="header-auth-btn" class="header-auth-btn" onclick="openAuthModal()">Log in</button>
-            <div id="header-profile-dropdown" class="header-profile-dropdown" aria-hidden="true">
-                <button type="button" class="header-profile-item" onclick="openProfileForums()"><i data-feather="message-square"></i> Forums</button>
-                <button type="button" class="header-profile-item" onclick="openXrpModal()"><i data-feather="credit-card"></i> Change XRP address</button>
-                <button type="button" class="header-profile-item header-profile-item--danger" onclick="doLogout()"><i data-feather="log-out"></i> Log out</button>
+        <div class="header-right">
+            <button class="theme-toggle" onclick="toggleRugTheme()" title="Toggle Background">
+                <i data-feather="image"></i>
+            </button>
+            <div class="header-auth-wrap" id="header-auth-wrap">
+                <button type="button" id="header-auth-btn" class="header-auth-btn" onclick="openAuthModal()">Log in</button>
+                <div id="header-profile-dropdown" class="header-profile-dropdown" aria-hidden="true">
+                    <button type="button" class="header-profile-item" onclick="openProfileForums()"><i data-feather="message-square"></i> Forums</button>
+                    <button type="button" class="header-profile-item" onclick="openXrpModal()"><i data-feather="credit-card"></i> Change XRP address</button>
+                    <button type="button" class="header-profile-item header-profile-item--danger" onclick="doLogout()"><i data-feather="log-out"></i> Log out</button>
+                </div>
             </div>
         </div>
     </header>

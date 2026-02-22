@@ -61,12 +61,21 @@ body {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* THE RUG THEME TOGGLE BUTTON – left of Log in, no overlap */
-.theme-toggle {
+/* Header right: theme + auth, fixed gap so background button is always Npx left of Log in */
+.header-right {
     position: absolute;
-    right: 130px;
+    right: 20px;
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 202;
+}
+
+/* THE RUG THEME TOGGLE BUTTON – always 14px left of Log in via .header-right gap */
+.theme-toggle {
+    flex-shrink: 0;
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -84,7 +93,7 @@ body {
 .theme-toggle:hover {
     background: var(--action-orange);
     color: #111;
-    transform: translateY(-50%) scale(1.1);
+    transform: scale(1.1);
 }
 
 .theme-toggle i {
@@ -644,11 +653,7 @@ video {
 
 /* ---------------- HEADER AUTH & PROFILE DROPDOWN ---------------- */
 .header-auth-wrap {
-    position: absolute;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 202;
+    position: relative;
 }
 
 .header-auth-btn {
