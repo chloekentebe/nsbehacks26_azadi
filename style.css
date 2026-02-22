@@ -61,6 +61,49 @@ body {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+/* THE RUG THEME TOGGLE BUTTON */
+.theme-toggle {
+    position: absolute;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 201;
+    /* Keeps it clickable above the header */
+}
+
+.theme-toggle:hover {
+    background: var(--action-orange);
+    color: #111;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.theme-toggle i {
+    width: 20px;
+    height: 20px;
+}
+
+/* THE RUG BACKGROUND CLASS */
+/* When added to the body, it replaces the blue gradient */
+body.rug-theme {
+    /* The linear-gradient here adds a 75% dark overlay so the app remains readable! */
+    background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('assets/rug.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
 /* ---------------- GLOBAL PROGRESS BAR ---------------- */
 .impact-bar-container {
     position: fixed;
@@ -100,14 +143,19 @@ body {
     position: relative;
     width: 100%;
     max-width: 480px;
-    height: 100vh; /* This pushes the next video 100% off-screen! */
+    height: 100vh;
+    /* This pushes the next video 100% off-screen! */
     display: flex;
     align-items: center;
-    margin: 0 auto; /* Removed the bottom margin that was causing the peeking */
-    padding-top: 130px; /* Pushes the video safely down below the azadi header */
-    padding-bottom: 30px; /* Breathing room at the bottom of your screen */
+    margin: 0 auto;
+    /* Removed the bottom margin that was causing the peeking */
+    padding-top: 130px;
+    /* Pushes the video safely down below the azadi header */
+    padding-bottom: 30px;
+    /* Breathing room at the bottom of your screen */
     box-sizing: border-box;
-    scroll-snap-align: start; /* Snaps perfectly to the top of the screen now */
+    scroll-snap-align: start;
+    /* Snaps perfectly to the top of the screen now */
 }
 
 /* ---------------- THE NEW 2-PART VIDEO CARD ---------------- */
@@ -266,8 +314,9 @@ video {
 /* Keep the column locked to the new bottom padding */
 .side-column-container {
     position: absolute;
-    right: -85px; 
-    bottom: 30px; /* Matches the padding-bottom above, locking it dead-even with the card! */
+    right: -85px;
+    bottom: 30px;
+    /* Matches the padding-bottom above, locking it dead-even with the card! */
     display: flex;
     flex-direction: column;
     align-items: center;
