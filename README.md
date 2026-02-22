@@ -28,7 +28,6 @@ Instead of just scrolling past trauma, people need a dedicated platform where th
 * **Learn-to-Earn Progress:** A dynamic impact bar tracks user engagement, unlocking local action dashboards after watching 5 educational videos.
 * **Comprehensive Knowledge Base:** Dedicated hubs for articles and community forums to facilitate deeper learning and discussion beyond the video feed.
 * **Action-Oriented Dashboards:** Integrated directories for local charities and protests, seamlessly bridging the gap between digital awareness and physical organizing.
-* **User-Generated Content (Create):** A dynamic 'Create' portal empowering community members to upload and amplify their own educational videos and grassroots stories.
 * **Immersive Full-Screen Feed:** Custom-built CSS snap-scrolling ensures a focused, one-video-at-a-time viewing experience with custom aesthetic media controls.
 * **Interactive Local Impact Maps:** Integrated Leaflet.js and OpenStreetMap to dynamically drop pins on global coordinates without requiring paid API keys.
 * **Persian Rug Dark Mode:** A hidden UI toggle that switches the app's aesthetic to a custom, dark-tinted Persian rug background, paying homage to the source of inspiration for the platform's name.
@@ -90,7 +89,8 @@ While this MVP demonstrates the speed and utility of the XRPL, our production ar
 
 * **Secure Wallet Integration:** Integrating Crossmark or Xaman so users can sign transactions with their own self-custodial wallets natively in the app.
 * **Webhook Verification:** Integrating with Eventbrite/Action Network APIs to automatically trigger badge mints only after real-world attendance is verified by organizers.
-* **DAO Governance:** Allowing community funds to be distributed based on the weight of a user's Proof-of-Action badges.
+* **Enhanced AI Fact-Checking:** Upgrading our Gemini API integration to include a rigorous, automated fact-checking layer. To ensure the highest standard of accuracy and combat misinformation, we plan to implement a mathematical confidence threshold.
+* **User-Generated Content (Create):** A dynamic 'Create' portal empowering community members to upload and amplify their own educational videos and grassroots stories.
 ---
 ## 📚 Resources
 * **XRPL Dev Resources:** [https://linktr.ee/rippledevrel](https://linktr.ee/rippledevrel)
