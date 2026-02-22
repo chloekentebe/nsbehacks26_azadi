@@ -31,7 +31,7 @@ Instead of just scrolling past trauma, people need a dedicated platform where th
 * **User-Generated Content (Create):** A dynamic 'Create' portal empowering community members to upload and amplify their own educational videos and grassroots stories.
 * **Immersive Full-Screen Feed:** Custom-built CSS snap-scrolling ensures a focused, one-video-at-a-time viewing experience with custom aesthetic media controls.
 * **Interactive Local Impact Maps:** Integrated Leaflet.js and OpenStreetMap to dynamically drop pins on global coordinates without requiring paid API keys.
-* **Persian Rug Dark Mode:** A hidden UI toggle that switches the app's aesthetic to a custom, dark-tinted Persian rug background, paying homage to the source of inspiration for the platform's name..
+* **Persian Rug Dark Mode:** A hidden UI toggle that switches the app's aesthetic to a custom, dark-tinted Persian rug background, paying homage to the source of inspiration for the platform's name.
 
 ---
 
