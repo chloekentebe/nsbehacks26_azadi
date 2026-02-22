@@ -967,6 +967,18 @@ function renderCharityCards(panelBody, list) {
 
 const PROTESTS_CITIES = ['Toronto', 'Montreal', 'Vancouver'];
 
+// Hardcoded protest for reel 6 (Iran) in Toronto only – no AI call. Realistic location: Nathan Phillips Square.
+const HARDCODED_PROTEST_REEL_6 = {
+  id: 'toronto-iran-solidarity',
+  title: 'Solidarity with Iran – End Repression of Protests',
+  description: 'Stand in solidarity with those demanding freedom in Iran. Peaceful rally at Nathan Phillips Square. Bring signs; all welcome.',
+  when: 'Saturday 2:00 PM',
+  lat: 43.6526,
+  lng: -79.3832,
+  locationLabel: 'Nathan Phillips Square, 100 Queen St W, Toronto',
+  rsvpProtestId: 'toronto-iran-solidarity',
+};
+
 // Protests: context from the reel on the left. Panel is replaced by city toggle + messages so previous topic doesn't persist.
 function showProtestsPanel(selectedCity, currentReelId) {
     const panelBody = document.getElementById('new-page-content');
@@ -995,14 +1007,26 @@ function showProtestsPanel(selectedCity, currentReelId) {
         showProtestsPanel(city, reelId);
     });
 
-    loadProtestsByCity(panelBody, selectedCity, issues);
+    loadProtestsByCity(panelBody, selectedCity, issues, currentReelId);
 }
 
-async function loadProtestsByCity(panelBody, city, issues) {
+async function loadProtestsByCity(panelBody, city, issues, currentReelId) {
     const toggleSection = panelBody.querySelector('.protests-city-toggle');
     const loadingEl = panelBody.querySelector('.panel-message.loading');
-    if (loadingEl) loadingEl.textContent = `Finding protests in ${city}…`;
+    const isReel6Toronto = String(currentReelId) === '6' && city === 'Toronto';
 
+    if (isReel6Toronto) {
+        if (loadingEl) loadingEl.remove();
+        let el = toggleSection ? toggleSection.nextElementSibling : null;
+        while (el) { const next = el.nextElementSibling; el.remove(); el = next; }
+        const grid = document.createElement('div');
+        grid.className = 'dashboard-grid';
+        panelBody.appendChild(grid);
+        renderProtestCards(grid, [HARDCODED_PROTEST_REEL_6]);
+        return;
+    }
+
+    if (loadingEl) loadingEl.textContent = `Finding protests in ${city}…`;
     try {
         const res = await fetch(`${API_BASE}/api/nearby-protests`, {
             method: 'POST',
@@ -1040,27 +1064,70 @@ function renderProtestCards(container, list) {
         const title = p.title || 'Protest';
         const desc = (p.description && String(p.description).trim()) ? escapeHtml(p.description) : '';
         const when = (p.when && String(p.when).trim()) ? escapeHtml(p.when) : 'Upcoming';
-        const mapUrl = (p.mapUrl && String(p.mapUrl).startsWith('http')) ? p.mapUrl : '#';
-        const website = (p.website && String(p.website).startsWith('http')) ? p.website : '';
         const km = p.km != null ? ` · ${p.km} km away` : '';
+        const hasRsvp = p.rsvpProtestId && String(p.rsvpProtestId).trim();
+        const lat = p.lat != null ? Number(p.lat) : null;
+        const lng = p.lng != null ? Number(p.lng) : null;
+        const osmUrl = (lat != null && lng != null)
+            ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=17`
+            : (p.mapUrl && String(p.mapUrl).startsWith('http') ? p.mapUrl : '');
+        const mapUrl = osmUrl || (p.mapUrl && String(p.mapUrl).startsWith('http') ? p.mapUrl : '#');
+        const website = (p.website && String(p.website).startsWith('http')) ? p.website : '';
         const websiteBtn = website
             ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener" class="dash-btn dash-btn-donate">Visit website</a>`
             : '';
+        const rsvpBtn = hasRsvp
+            ? `<button type="button" class="dash-btn dash-btn-donate protest-rsvp-btn" data-protest-id="${escapeHtml(p.rsvpProtestId)}" onclick="rsvpToProtest('${escapeHtml(p.rsvpProtestId)}')">RSVP</button>`
+            : '';
+        const safeId = hasRsvp ? escapeHtml(p.rsvpProtestId) : '';
         return `
-        <div class="dash-card">
+        <div class="dash-card" data-protest-id="${safeId}">
             <span class="dash-card-tag" style="color: #e74c3c;">Action Alert</span>
             <h3>${escapeHtml(title)}</h3>
             ${desc ? `<p>${desc}</p>` : ''}
+            ${p.locationLabel ? `<p style="color:#666; font-size:14px;">📍 ${escapeHtml(p.locationLabel)}</p>` : ''}
             <div class="dash-card-footer" style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
-                <span style="color:#888; font-size:13px;">📍 ${when}${km}</span>
-                <div style="display:flex; gap:8px; margin-left:auto;">
-                    <a href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener" class="dash-btn">View on map</a>
+                <span style="color:#888; font-size:13px;">🕐 ${when}${km}</span>
+                <div style="display:flex; gap:8px; margin-left:auto; flex-wrap:wrap;">
+                    ${rsvpBtn}
+                    <a href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener" class="dash-btn">View location</a>
                     ${websiteBtn}
                 </div>
             </div>
         </div>
         `;
     }).join('');
+}
+
+async function rsvpToProtest(protestId) {
+    if (!authToken) {
+        alert('Log in to RSVP.');
+        return;
+    }
+    if (!authUser || !authUser.xrpAddress) {
+        alert('Add your XRP Ledger address in your profile to receive the participation badge.');
+        return;
+    }
+    const btn = document.querySelector(`.protest-rsvp-btn[data-protest-id="${protestId}"]`);
+    if (btn) { btn.disabled = true; btn.textContent = 'Claiming…'; }
+    try {
+        const res = await fetch(API_BASE + '/api/protests/rsvp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+            body: JSON.stringify({ protestId }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || 'RSVP failed.');
+            if (btn) { btn.disabled = false; btn.textContent = 'RSVP'; }
+            return;
+        }
+        if (btn) { btn.textContent = 'RSVP\'d ✓'; }
+        alert(data.message + (data.explorer ? '\n\nView: ' + data.explorer : ''));
+    } catch (e) {
+        alert('Network error.');
+        if (btn) { btn.disabled = false; btn.textContent = 'RSVP'; }
+    }
 }
 
 function escapeHtml(text) {

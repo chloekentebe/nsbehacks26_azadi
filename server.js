@@ -153,6 +153,9 @@ app.post('/api/forum/messages', authMiddleware, (req, res) => {
 // ----- NFT reward (XRPL Testnet) -----
 const XRPL_NETWORK = process.env.XRPL_NETWORK || 'wss://s.altnet.rippletest.net:51233';
 const REWARD_NFT_URI = process.env.REWARD_NFT_URI || 'https://static.thenounproject.com/png/achievement-badge-icon-8087381-512.png';
+const PROTEST_BADGE_URI = process.env.PROTEST_BADGE_URI || REWARD_NFT_URI;
+const PROTEST_NFT_TAXON = 1;
+const protestRsvps = new Set();
 
 async function getNftWallet() {
   const seed = process.env.XRPL_REWARD_WALLET_SEED;
@@ -212,7 +215,60 @@ app.post('/api/rewards/claim', authMiddleware, async (req, res) => {
   }
 });
 
-const CACHE_TTL_MS = 5 * 60 * 1000;
+app.post('/api/protests/rsvp', authMiddleware, async (req, res) => {
+  const u = users.get(req.userEmail);
+  if (!u) return res.status(401).json({ error: 'User not found.' });
+  if (!u.xrpAddress) return res.status(400).json({ error: 'Add your XRP Ledger address in your profile to receive the participation badge.' });
+  const { protestId } = req.body || {};
+  const pid = protestId && String(protestId).trim();
+  if (!pid) return res.status(400).json({ error: 'protestId required.' });
+  const rsvpKey = `${pid}:${req.userEmail}`;
+  if (protestRsvps.has(rsvpKey)) return res.status(400).json({ error: 'You already RSVP\'d for this protest. Check your wallet for the badge.' });
+  const wallet = await getNftWallet();
+  if (!wallet) return res.status(503).json({ error: 'Protest badge not configured. Set XRPL_REWARD_WALLET_SEED in .env.' });
+  let client;
+  try {
+    client = new Client(XRPL_NETWORK);
+    await client.connect();
+    const mintTx = {
+      TransactionType: 'NFTokenMint',
+      Account: wallet.address,
+      NFTokenTaxon: PROTEST_NFT_TAXON,
+      URI: Buffer.from(PROTEST_BADGE_URI, 'utf8').toString('hex'),
+      Flags: 8,
+    };
+    const mintPrepared = await client.autofill(mintTx);
+    const mintSigned = wallet.sign(mintPrepared);
+    const mintResult = await client.submitAndWait(mintSigned.tx_blob);
+    const nftId = getNFTokenID(mintResult.result.meta);
+    if (!nftId) return res.status(502).json({ error: 'Badge minted but could not read ID.' });
+    const offerTx = {
+      TransactionType: 'NFTokenCreateOffer',
+      Account: wallet.address,
+      NFTokenID: nftId,
+      Amount: '0',
+      Destination: u.xrpAddress,
+      Flags: 1,
+    };
+    const offerPrepared = await client.autofill(offerTx);
+    const offerSigned = wallet.sign(offerPrepared);
+    const offerResult = await client.submitAndWait(offerSigned.tx_blob);
+    protestRsvps.add(rsvpKey);
+    return res.json({
+      success: true,
+      message: 'Accept the offer in your XRP wallet (e.g. Xumm) to receive your protest participation badge.',
+      hash: offerResult.result.hash,
+      explorer: `https://testnet.xrpl.org/transactions/${offerResult.result.hash}`,
+    });
+  } catch (err) {
+    console.error('Protest RSVP NFT error', err);
+    return res.status(502).json({ error: err.message || 'XRPL error. Try again.' });
+  } finally {
+    if (client) await client.disconnect();
+  }
+});
+
+const CACHE_TTL_MS = 30 * 60 * 1000;
 const articlesCache = new Map();
 const charitiesCache = new Map();
 function cacheKey(issues) {
@@ -239,6 +295,15 @@ function toSiteName(hostname) {
   const titleCase = cleaned.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
   if (titleCase.length <= 4) return titleCase.toUpperCase();
   return titleCase;
+}
+
+async function geminiFetch(url, options) {
+  let res = await fetch(url, options);
+  if (res.status === 429) {
+    await new Promise((r) => setTimeout(r, 12000));
+    res = await fetch(url, options);
+  }
+  return res;
 }
 
 function geminiError(status, errText) {
@@ -294,7 +359,7 @@ function parseCharitiesJson(cleaned) {
 async function fetchArticleRecommendations(prompt) {
   const model = GEMINI_MODEL;
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-  const response = await fetch(apiUrl, {
+  const response = await geminiFetch(apiUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -455,7 +520,7 @@ Return only valid JSON, no markdown or extra text:
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-    const response = await fetch(url, {
+    const response = await geminiFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -515,7 +580,7 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 }
 
 const protestsCache = new Map();
-const PROTESTS_CACHE_TTL_MS = 10 * 60 * 1000;
+const PROTESTS_CACHE_TTL_MS = 30 * 60 * 1000;
 
 const CITY_COORDS = {
   Toronto: { lat: 43.6532, lng: -79.3832 },
@@ -563,7 +628,7 @@ Return only a JSON array. Include only events that are happening soon (future da
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-    const response = await fetch(url, {
+    const response = await geminiFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
