@@ -13,7 +13,7 @@ const MESSAGES_PER_NFT = 5;
 
 // In-memory stores (use a DB in production)
 const users = new Map(); // email -> { email, passwordHash, xrpAddress?, messageCount, earnedNftCount }
-const forumMessages = []; // { id, email, text, createdAt }
+const forumMessagesByReel = new Map(); // reelId (string) -> [ { id, email, text, createdAt } ]
 let messageIdCounter = 1;
 // Gemini 2.5 Flash Lite has much higher/unlimited quota — fewer "too many requests" errors. Good for analyzing topics + search grounding.
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
@@ -34,25 +34,34 @@ function authMiddleware(req, res, next) {
   }
 }
 
+const XRP_ADDRESS_REGEX = /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/;
+
 // ----- Auth -----
 app.post('/api/auth/register', async (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, xrpAddress } = req.body || {};
   const e = (email && String(email).trim().toLowerCase()) || '';
   const p = password && String(password);
   if (!e || !p || p.length < 6) return res.status(400).json({ error: 'Email and password (min 6 characters) required.' });
   if (users.has(e)) return res.status(400).json({ error: 'Email already registered.' });
+  const addr = (xrpAddress && String(xrpAddress).trim()) || null;
+  if (addr && !XRP_ADDRESS_REGEX.test(addr)) return res.status(400).json({ error: 'Invalid XRP Ledger address.' });
   const passwordHash = await bcrypt.hash(p, 10);
-  users.set(e, { email: e, passwordHash, xrpAddress: null, messageCount: 0, earnedNftCount: 0 });
+  users.set(e, { email: e, passwordHash, xrpAddress: addr, messageCount: 0, earnedNftCount: 0, recentForumReelIds: [] });
   const token = jwt.sign({ email: e }, JWT_SECRET, { expiresIn: '7d' });
-  return res.json({ token, user: { email: e, messageCount: 0, earnedNftCount: 0, xrpAddress: null } });
+  return res.json({ token, user: { email: e, messageCount: 0, earnedNftCount: 0, xrpAddress: addr } });
 });
 
 app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, xrpAddress } = req.body || {};
   const e = (email && String(email).trim().toLowerCase()) || '';
   const u = users.get(e);
   if (!u || !(await bcrypt.compare(String(password || ''), u.passwordHash)))
     return res.status(401).json({ error: 'Invalid email or password.' });
+  const addr = (xrpAddress && String(xrpAddress).trim()) || null;
+  if (addr) {
+    if (!XRP_ADDRESS_REGEX.test(addr)) return res.status(400).json({ error: 'Invalid XRP Ledger address.' });
+    u.xrpAddress = addr;
+  }
   const token = jwt.sign({ email: e }, JWT_SECRET, { expiresIn: '7d' });
   return res.json({
     token,
@@ -83,29 +92,51 @@ app.patch('/api/auth/me', authMiddleware, (req, res) => {
   const u = users.get(req.userEmail);
   if (!u) return res.status(401).json({ error: 'User not found.' });
   const addr = (xrpAddress && String(xrpAddress).trim()) || null;
-  if (addr && !/^r[1-9A-HJ-NP-Za-km-z]{24,34}$/.test(addr))
+  if (addr && !XRP_ADDRESS_REGEX.test(addr))
     return res.status(400).json({ error: 'Invalid XRP classic address.' });
   u.xrpAddress = addr;
   return res.json({ user: { email: u.email, messageCount: u.messageCount, earnedNftCount: u.earnedNftCount, xrpAddress: u.xrpAddress } });
 });
 
-// ----- Forum -----
+// ----- Forum (per-reel) -----
+function getForumMessagesForReel(reelId) {
+  const key = reelId == null ? '1' : String(reelId);
+  if (!forumMessagesByReel.has(key)) forumMessagesByReel.set(key, []);
+  return forumMessagesByReel.get(key);
+}
+
 app.get('/api/forum/messages', (req, res) => {
-  const last = Math.min(100, forumMessages.length);
-  const list = forumMessages.slice(-last).map((m) => ({ id: m.id, email: m.email, text: m.text, createdAt: m.createdAt }));
+  const reelId = req.query.reelId != null ? String(req.query.reelId) : '1';
+  const messages = getForumMessagesForReel(reelId);
+  const last = Math.min(100, messages.length);
+  const list = messages.slice(-last).map((m) => ({ id: m.id, email: m.email, text: m.text, createdAt: m.createdAt }));
   return res.json({ messages: list });
 });
 
-app.post('/api/forum/messages', authMiddleware, (req, res) => {
-  const { text } = req.body || {};
-  const trimmed = (text && String(text).trim()) || '';
-  if (!trimmed) return res.status(400).json({ error: 'Message text required.' });
+app.get('/api/forum/my-recent', authMiddleware, (req, res) => {
   const u = users.get(req.userEmail);
   if (!u) return res.status(401).json({ error: 'User not found.' });
+  const raw = u.recentForumReelIds || [];
+  const reels = raw.slice(0, 10).map((r) => (typeof r === 'string' ? { reelId: r, lastActivityAt: null } : r));
+  return res.json({ reels });
+});
+
+app.post('/api/forum/messages', authMiddleware, (req, res) => {
+  const { text, reelId } = req.body || {};
+  const trimmed = (text && String(text).trim()) || '';
+  if (!trimmed) return res.status(400).json({ error: 'Message text required.' });
+  const reelKey = reelId != null ? String(reelId) : '1';
+  const u = users.get(req.userEmail);
+  if (!u) return res.status(401).json({ error: 'User not found.' });
+  const messages = getForumMessagesForReel(reelKey);
   const id = messageIdCounter++;
   const createdAt = new Date().toISOString();
-  forumMessages.push({ id, email: req.userEmail, text: trimmed, createdAt });
+  messages.push({ id, email: req.userEmail, text: trimmed, createdAt });
   u.messageCount = (u.messageCount || 0) + 1;
+  const recent = u.recentForumReelIds || [];
+  const without = recent.filter((r) => (typeof r === 'string' ? r : r.reelId) !== reelKey);
+  without.unshift({ reelId: reelKey, lastActivityAt: createdAt });
+  u.recentForumReelIds = without.slice(0, 10);
   let earnedThisTime = false;
   if (u.messageCount > 0 && u.messageCount % MESSAGES_PER_NFT === 0) {
     u.earnedNftCount = (u.earnedNftCount || 0) + 1;
@@ -259,6 +290,78 @@ function parseCharitiesJson(cleaned) {
   return null;
 }
 
+// Helper: call Gemini with google_search and parse out recommendations (URLs from grounding + optional model text).
+async function fetchArticleRecommendations(prompt) {
+  const model = GEMINI_MODEL;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      tools: [{ google_search: {} }],
+      generationConfig: { temperature: 0.5, maxOutputTokens: 1024 },
+    }),
+  });
+  if (!response.ok) return { error: await response.text(), status: response.status };
+  const data = await response.json();
+  const candidate = data?.candidates?.[0];
+  const groundingMetadata = candidate?.groundingMetadata;
+  const chunks = groundingMetadata?.groundingChunks || groundingMetadata?.grounding_chunks || [];
+  const modelText = candidate?.content?.parts?.[0]?.text || '';
+  const seen = new Set();
+  const recommendations = [];
+  for (const chunk of chunks) {
+    const web = chunk?.web || chunk;
+    const uri = web?.uri || web?.url || chunk?.uri || chunk?.url || chunk?.retrievedContext?.uri;
+    if (!uri || typeof uri !== 'string' || !uri.startsWith('http')) continue;
+    if (seen.has(uri)) continue;
+    seen.add(uri);
+    let hostname = '';
+    try { hostname = new URL(uri).hostname.replace(/^www\./, ''); } catch (_) {}
+    recommendations.push({ url: uri, source: toSiteName(hostname || 'Article'), description: '' });
+    if (recommendations.length >= 4) break;
+  }
+  if (recommendations.length === 0 && modelText) {
+    const urlRegex = /https?:\/\/[^\s"')\]}>]+/g;
+    const urls = [...new Set((modelText.match(urlRegex) || []).map((u) => u.replace(/[.,;:!?)\]\s]+$/, '')))].filter((u) => u.startsWith('http'));
+    for (const uri of urls) {
+      if (seen.has(uri) || !uri.startsWith('http')) continue;
+      seen.add(uri);
+      let hostname = '';
+      try { hostname = new URL(uri).hostname.replace(/^www\./, ''); } catch (_) {}
+      if (/vertexai|google\.com|googleapis/i.test(hostname)) continue;
+      recommendations.push({ url: uri, source: toSiteName(hostname || 'Article'), description: '' });
+      if (recommendations.length >= 4) break;
+    }
+  }
+  if (modelText && recommendations.length > 0) {
+    try {
+      const cleaned = modelText.replace(/^```json?\s*|\s*```$/g, '').trim();
+      const parsed = JSON.parse(cleaned);
+      const list = Array.isArray(parsed) ? parsed : [];
+      list.forEach((item, i) => {
+        if (recommendations[i] && (item.description || item.desc)) {
+          const d = (item.description || item.desc || '').trim();
+          if (d) recommendations[i].description = d;
+        }
+      });
+    } catch (_) {}
+  }
+  recommendations.forEach((r) => {
+    if (!r.description || !String(r.description).trim()) r.description = `Article from ${r.source}.`;
+  });
+  return { recommendations };
+}
+
+// Build a shorter search-friendly query from issues (e.g. "creator — desc" -> just "desc", truncated).
+function shortSearchQuery(issues) {
+  if (!Array.isArray(issues) || issues.length === 0) return '';
+  const first = String(issues[0] || '').trim();
+  const withoutCreator = first.includes(' — ') ? first.split(' — ').slice(1).join(' — ').trim() : first;
+  return (withoutCreator || first).slice(0, 220);
+}
+
 app.post('/api/recommend-articles', async (req, res) => {
   const { issues } = req.body;
   const key = cacheKey(issues);
@@ -273,93 +376,38 @@ app.post('/api/recommend-articles', async (req, res) => {
   }
 
   const issuesText = issues.join('\n• ');
-  const prompt = `Use web search to find 3 or 4 real, published news or feature articles from the web about these topics:
+  const mainPrompt = `Use web search to find 3 or 4 real, published news or feature articles about these topics. Search using the main ideas, names, places, and events mentioned.
 
+Topics:
 • ${issuesText}
 
-List only articles you actually find via search — each must have a real URL. Do not make up titles or URLs.
+You must find real articles via search — each must have a real URL. Do not invent titles or URLs. Prefer recent news or feature articles.
 
-For each article, in your response provide one short sentence summarizing what the article is about. Use a confident, direct tone — no hedging (no "likely", "may", "might", or "could"). State what the article covers.
-
-Respond with a JSON array only, in the same order as your search results. Format:
+For each article provide one short sentence summarizing it. Use a direct tone. Respond with a JSON array only:
 [{"description":"..."}, {"description":"..."}, ...]`;
 
   try {
-    const model = GEMINI_MODEL;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        tools: [{ google_search: {} }],
-        generationConfig: {
-          temperature: 0.5,
-          maxOutputTokens: 1024,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('Gemini API error', response.status, errText);
-      return res.status(502).json({ error: geminiError(response.status, errText) });
+    let result = await fetchArticleRecommendations(mainPrompt);
+    if (result.error) {
+      console.error('Gemini API error', result.status, result.error);
+      return res.status(502).json({ error: geminiError(result.status, result.error) });
     }
 
-    const data = await response.json();
-    const candidate = data?.candidates?.[0];
-    const groundingMetadata = candidate?.groundingMetadata;
-    const chunks = groundingMetadata?.groundingChunks || groundingMetadata?.grounding_chunks || [];
-    const modelText = candidate?.content?.parts?.[0]?.text || '';
+    let recommendations = result.recommendations || [];
+    // If no results, retry once with a shorter, search-friendly query so other reels get articles too
+    if (recommendations.length === 0) {
+      const shortQuery = shortSearchQuery(issues);
+      if (shortQuery) {
+        const fallbackPrompt = `Search the web for news or feature articles about: ${shortQuery}
 
-    const seen = new Set();
-    const recommendations = [];
-    for (const chunk of chunks) {
-      const web = chunk?.web || chunk;
-      const uri = web?.uri || web?.url || chunk?.uri || chunk?.url || chunk?.retrievedContext?.uri;
-      if (!uri || typeof uri !== 'string' || !uri.startsWith('http')) continue;
-      if (seen.has(uri)) continue;
-      seen.add(uri);
-      let hostname = '';
-      try { hostname = new URL(uri).hostname.replace(/^www\./, ''); } catch (_) {}
-      const siteName = toSiteName(hostname || 'Article');
-      recommendations.push({ url: uri, source: siteName, description: '' });
-      if (recommendations.length >= 4) break;
-    }
-
-    if (recommendations.length === 0 && modelText) {
-      const urlRegex = /https?:\/\/[^\s"')\]}>]+/g;
-      const urls = [...new Set((modelText.match(urlRegex) || []).map((u) => u.replace(/[.,;:!?)\]\s]+$/, '')))].filter((u) => u.startsWith('http'));
-      for (const uri of urls) {
-        if (seen.has(uri) || !uri.startsWith('http')) continue;
-        seen.add(uri);
-        let hostname = '';
-        try { hostname = new URL(uri).hostname.replace(/^www\./, ''); } catch (_) {}
-        if (/vertexai|google\.com|googleapis/i.test(hostname)) continue;
-        recommendations.push({ url: uri, source: toSiteName(hostname || 'Article'), description: '' });
-        if (recommendations.length >= 4) break;
+Find 3 or 4 real articles with working URLs. List each with one short sentence. Respond with a JSON array only:
+[{"description":"..."}, {"description":"..."}, ...]`;
+        result = await fetchArticleRecommendations(fallbackPrompt);
+        if (!result.error && result.recommendations && result.recommendations.length > 0) {
+          recommendations = result.recommendations;
+        }
       }
     }
-
-    if (modelText && recommendations.length > 0) {
-      try {
-        const cleaned = modelText.replace(/^```json?\s*|\s*```$/g, '').trim();
-        const parsed = JSON.parse(cleaned);
-        const list = Array.isArray(parsed) ? parsed : [];
-        list.forEach((item, i) => {
-          if (recommendations[i] && (item.description || item.desc)) {
-            let d = (item.description || item.desc || '').trim();
-            if (d) recommendations[i].description = d;
-          }
-        });
-      } catch (_) {}
-    }
-
-    recommendations.forEach((r) => {
-      if (!r.description || !String(r.description).trim()) {
-        r.description = `Article from ${r.source}.`;
-      }
-    });
 
     if (recommendations.length === 0) {
       return res.status(502).json({ error: 'No articles found for these topics. Try again or try different topics.' });

@@ -156,10 +156,10 @@ videoData.forEach(item => {
         
         <div class="side-column-container">
             <div class="side-menu-expanded">
-                <button class="side-icon" onclick="openNewPage('Forums')" title="Forums"><i data-feather="message-square"></i></button>
-                <button class="side-icon" onclick="openNewPage('Articles')" title="Articles"><i data-feather="book-open"></i></button>
-                <button class="side-icon" onclick="openNewPage('Charities')" title="Charities"><i data-feather="heart"></i></button>
-                <button class="side-icon" onclick="openNewPage('Protests')" title="Protests"><i data-feather="map-pin"></i></button>
+                <button class="side-icon" onclick="openNewPage('Forums', ${item.id})" title="Forums"><i data-feather="message-square"></i></button>
+                <button class="side-icon" onclick="openNewPage('Articles', ${item.id})" title="Articles"><i data-feather="book-open"></i></button>
+                <button class="side-icon" onclick="openNewPage('Charities', ${item.id})" title="Charities"><i data-feather="heart"></i></button>
+                <button class="side-icon" onclick="openNewPage('Protests', ${item.id})" title="Protests"><i data-feather="map-pin"></i></button>
                 <button class="side-icon" onclick="openNewPage('Create')" title="Create"><i data-feather="plus-circle"></i></button>
             </div>
             <button class="side-icon menu-trigger" title="More Options">
@@ -320,17 +320,17 @@ const pageContentData = {
     `
 };
 
-function openNewPage(pageName) {
+function openNewPage(pageName, currentReelId) {
     document.getElementById('new-page-title').innerText = pageName;
-    // Terminate any in-flight request from the other tab so we don't parse stale/partial JSON
+    // currentReelId = reel currently being viewed (the row whose button was clicked); used for reel-specific Articles/Charities/Protests
     if (pageName === 'Articles') {
         if (charitiesAbortController) {
             charitiesAbortController.abort();
             charitiesAbortController = null;
         }
-        document.getElementById('new-page-content').innerHTML = '<p class="panel-message loading">Getting article recommendations from AI…</p>';
+        document.getElementById('new-page-content').innerHTML = '<p class="panel-message loading">Getting article recommendations for this reel…</p>';
         document.getElementById('white-page').classList.add('active');
-        loadArticleRecommendations();
+        loadArticleRecommendations(currentReelId);
         return;
     }
     if (pageName === 'Charities') {
@@ -338,23 +338,24 @@ function openNewPage(pageName) {
             articlesAbortController.abort();
             articlesAbortController = null;
         }
-        document.getElementById('new-page-content').innerHTML = '<p class="panel-message loading">Getting charity recommendations from AI…</p>';
+        document.getElementById('new-page-content').innerHTML = '<p class="panel-message loading">Getting charity recommendations for this reel…</p>';
         document.getElementById('white-page').classList.add('active');
-        loadCharityRecommendations();
+        loadCharityRecommendations(currentReelId);
         return;
     }
     if (pageName === 'Protests') {
         if (articlesAbortController) { articlesAbortController.abort(); articlesAbortController = null; }
         if (charitiesAbortController) { charitiesAbortController.abort(); charitiesAbortController = null; }
         document.getElementById('white-page').classList.add('active');
-        showProtestsPanel('Toronto');
+        showProtestsPanel('Toronto', currentReelId);
         return;
     }
     if (pageName === 'Forums') {
+        forumCameFromProfile = false;
         if (articlesAbortController) { articlesAbortController.abort(); articlesAbortController = null; }
         if (charitiesAbortController) { charitiesAbortController.abort(); charitiesAbortController = null; }
         document.getElementById('white-page').classList.add('active');
-        loadForumPanel();
+        loadForumPanel(currentReelId != null ? currentReelId : 1);
         return;
     }
 
@@ -391,24 +392,116 @@ function getAuthHeader() {
 }
 
 function updateHeaderAuthButton() {
+  const wrap = document.getElementById('header-auth-wrap');
   const btn = document.getElementById('header-auth-btn');
-  if (!btn) return;
+  const dropdown = document.getElementById('header-profile-dropdown');
+  if (!wrap || !btn) return;
   if (authUser) {
     btn.textContent = authUser.email;
-    btn.onclick = () => { openNewPage('Forums'); };
+    btn.onclick = toggleProfileDropdown;
+    if (dropdown) dropdown.setAttribute('aria-hidden', 'true');
+    wrap.classList.remove('profile-open');
+    feather.replace();
   } else {
     btn.textContent = 'Log in';
     btn.onclick = openAuthModal;
+    if (dropdown) dropdown.setAttribute('aria-hidden', 'true');
+    wrap.classList.remove('profile-open');
   }
+}
+
+function toggleProfileDropdown(e) {
+  if (!authUser) return;
+  const wrap = document.getElementById('header-auth-wrap');
+  if (!wrap) return;
+  wrap.classList.toggle('profile-open');
+  const dropdown = document.getElementById('header-profile-dropdown');
+  if (dropdown) dropdown.setAttribute('aria-hidden', wrap.classList.contains('profile-open') ? 'false' : 'true');
+  e && e.stopPropagation();
+}
+
+function closeProfileDropdown() {
+  const wrap = document.getElementById('header-auth-wrap');
+  if (wrap) wrap.classList.remove('profile-open');
+  const dropdown = document.getElementById('header-profile-dropdown');
+  if (dropdown) dropdown.setAttribute('aria-hidden', 'true');
+}
+
+function openProfileForums() {
+  closeProfileDropdown();
+  forumCameFromProfile = true;
+  document.getElementById('new-page-title').innerText = 'Forums';
+  document.getElementById('white-page').classList.add('active');
+  loadForumRecentList();
+}
+
+function openXrpModal() {
+  closeProfileDropdown();
+  const input = document.getElementById('xrp-address-input');
+  const msg = document.getElementById('xrp-message');
+  if (input) input.value = (authUser && authUser.xrpAddress) ? authUser.xrpAddress : '';
+  if (msg) {
+    msg.textContent = 'Enter your address to receive participation NFTs (starts with r…).';
+    msg.classList.remove('auth-screen-error');
+  }
+  document.getElementById('xrp-modal').classList.add('active');
+  document.getElementById('xrp-modal').setAttribute('aria-hidden', 'false');
+  setTimeout(() => input && input.focus(), 100);
+  feather.replace();
+}
+
+function closeXrpModal() {
+  document.getElementById('xrp-modal').classList.remove('active');
+  document.getElementById('xrp-modal').setAttribute('aria-hidden', 'true');
+}
+
+async function saveXrpAddress() {
+  const input = document.getElementById('xrp-address-input');
+  const msg = document.getElementById('xrp-message');
+  const trimmed = (input && input.value && input.value.trim()) || '';
+  if (!trimmed) {
+    if (msg) { msg.textContent = 'Enter an XRP Ledger address.'; msg.classList.add('auth-screen-error'); }
+    return;
+  }
+  try {
+    const res = await fetch(API_BASE + '/api/auth/me', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify({ xrpAddress: trimmed }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (msg) { msg.textContent = data.error || 'Invalid address.'; msg.classList.add('auth-screen-error'); }
+      return;
+    }
+    if (data.user) {
+      authUser = data.user;
+      saveAuthUser();
+    }
+    closeXrpModal();
+    if (document.getElementById('new-page-title').innerText === 'Forums') loadForumPanel(currentForumReelId);
+  } catch (_) {
+    if (msg) { msg.textContent = 'Network error. Try again.'; msg.classList.add('auth-screen-error'); }
+  }
+}
+
+function doLogout() {
+  logout();
+  closeProfileDropdown();
 }
 
 function openAuthModal() {
   document.getElementById('auth-modal-title').textContent = 'Log in';
+  const submitBtn = document.getElementById('auth-submit-btn');
+  if (submitBtn) submitBtn.textContent = 'Log in';
   document.getElementById('auth-toggle-btn').textContent = 'Create account';
   document.getElementById('auth-message').textContent = '';
   document.getElementById('auth-email').value = '';
   document.getElementById('auth-password').value = '';
+  const xrpEl = document.getElementById('auth-xrp');
+  if (xrpEl) xrpEl.value = '';
   document.getElementById('auth-modal').classList.add('active');
+  setTimeout(() => document.getElementById('auth-email').focus(), 100);
 }
 
 function closeAuthModal() {
@@ -418,13 +511,22 @@ function closeAuthModal() {
 function toggleAuthMode() {
   const isLogin = document.getElementById('auth-modal-title').textContent === 'Log in';
   document.getElementById('auth-modal-title').textContent = isLogin ? 'Create account' : 'Log in';
+  const submitBtn = document.getElementById('auth-submit-btn');
+  if (submitBtn) submitBtn.textContent = isLogin ? 'Sign up' : 'Log in';
   document.getElementById('auth-toggle-btn').textContent = isLogin ? 'Log in' : 'Create account';
   document.getElementById('auth-message').textContent = '';
+  const xrpEl = document.getElementById('auth-xrp');
+  if (xrpEl) xrpEl.value = '';
+}
+
+function isValidXrpAddress(s) {
+  return /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/.test(String(s).trim());
 }
 
 async function submitAuth() {
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
+  const xrpRaw = document.getElementById('auth-xrp') && document.getElementById('auth-xrp').value.trim();
   const isLogin = document.getElementById('auth-modal-title').textContent === 'Log in';
   const msgEl = document.getElementById('auth-message');
   if (!email || !password) {
@@ -435,18 +537,22 @@ async function submitAuth() {
     msgEl.textContent = 'Password must be at least 6 characters.';
     return;
   }
+  if (xrpRaw && !isValidXrpAddress(xrpRaw)) {
+    msgEl.textContent = 'XRP address must start with r and be 25–35 characters.';
+    return;
+  }
+  const body = { email, password };
+  if (xrpRaw) body.xrpAddress = xrpRaw;
   const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
   try {
     const res = await fetch(API_BASE + endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const errMsg = data.error || 'Something went wrong.';
-      msgEl.textContent = errMsg;
-      alert(errMsg);
+      msgEl.textContent = data.error || 'Something went wrong.';
       return;
     }
     authToken = data.token;
@@ -455,11 +561,9 @@ async function submitAuth() {
     saveAuthUser();
     updateHeaderAuthButton();
     closeAuthModal();
-    if (document.getElementById('new-page-title').innerText === 'Forums') loadForumPanel();
+    if (document.getElementById('new-page-title').innerText === 'Forums') loadForumPanel(currentForumReelId);
   } catch (e) {
-    const errMsg = 'Network error. Is the server running?';
-    msgEl.textContent = errMsg;
-    alert(errMsg);
+    msgEl.textContent = 'Network error. Is the server running?';
   }
 }
 
@@ -471,15 +575,66 @@ function logout() {
   updateHeaderAuthButton();
 }
 
-// ----- Forum + NFT reward -----
+// ----- Forum + NFT reward (per-reel) -----
 let forumPollTimer = null;
+let currentForumReelId = 1;
+let forumCameFromProfile = false; // true when opened via profile "Forums" -> show recent list and "Back" in thread
 
-function loadForumPanel() {
+async function loadForumRecentList() {
+  const panel = document.getElementById('new-page-content');
+  panel.innerHTML = '<p class="forum-loading">Loading your recent forums…</p>';
+  if (!authToken) {
+    panel.innerHTML = '<p class="forum-intro">Log in to see your recent forums.</p>';
+    return;
+  }
+  try {
+    const res = await fetch(API_BASE + '/api/forum/my-recent', { headers: getAuthHeader() });
+    const data = await res.json();
+    if (!res.ok) {
+      panel.innerHTML = '<p class="forum-error">Could not load. Try again.</p>';
+      return;
+    }
+    const reels = data.reels || [];
+    if (reels.length === 0) {
+      panel.innerHTML = `
+        <div class="forum-recent-container">
+          <h3 class="forum-recent-title">Your recent forums</h3>
+          <p class="forum-intro">You haven't posted in any forum yet. Open a reel and tap the Forums icon on the right to join a discussion.</p>
+        </div>`;
+      return;
+    }
+    const listHtml = reels.map((r) => {
+      const video = videoData.find((v) => String(v.id) === String(r.reelId));
+      const summary = video ? `${video.creator} – ${(video.desc || '').slice(0, 60)}${(video.desc || '').length > 60 ? '…' : ''}` : `Reel ${r.reelId}`;
+      return `
+        <div class="forum-recent-item">
+          <p class="forum-recent-summary">${escapeHtml(summary)}</p>
+          <button type="button" class="forum-btn forum-btn-primary" onclick="forumCameFromProfile=true; loadForumPanel(${r.reelId})">Open forum</button>
+        </div>`;
+    }).join('');
+    panel.innerHTML = `
+      <div class="forum-recent-container">
+        <h3 class="forum-recent-title">Your recent forums</h3>
+        <p class="forum-recent-subtitle">Forums you've participated in (up to 10)</p>
+        <div class="forum-recent-list">${listHtml}</div>
+      </div>`;
+  } catch (_) {
+    panel.innerHTML = '<p class="forum-error">Could not load. Is the server running?</p>';
+  }
+}
+
+function loadForumPanel(reelId) {
+  currentForumReelId = reelId != null ? reelId : 1;
   const panel = document.getElementById('new-page-content');
   const isLoggedIn = !!authUser;
   const nextNftIn = authUser && authUser.messageCount != null ? 5 - (authUser.messageCount % 5) : 5;
+  const video = videoData.find((v) => String(v.id) === String(currentForumReelId));
+  const reelLabel = video ? `${video.creator} – ${(video.desc || '').slice(0, 40)}${(video.desc || '').length > 40 ? '…' : ''}` : `Reel ${currentForumReelId}`;
+  const backLink = forumCameFromProfile ? `<a href="#" class="forum-back-link" onclick="loadForumRecentList(); return false;">← Back to your forums</a>` : '';
   panel.innerHTML = `
-    <div class="forum-container">
+    <div class="forum-container" data-forum-reel="${currentForumReelId}">
+      ${backLink}
+      <p class="forum-reel-label">Discussion for this reel: ${escapeHtml(reelLabel)}</p>
       ${!isLoggedIn ? `<p class="forum-intro">Log in to post messages and earn participation NFTs (1 NFT per 5 messages).</p>` : ''}
       ${authUser ? `
         <div class="forum-reward-bar">
@@ -488,8 +643,10 @@ function loadForumPanel() {
             ${(authUser.earnedNftCount || 0) > 0 ? ` <span class="forum-earned">You have ${authUser.earnedNftCount} NFT(s) to claim!</span>` : ''}
           </div>
           <div class="forum-reward-actions">
-            ${authUser.xrpAddress ? `<button type="button" class="forum-btn forum-btn-primary" onclick="claimNft()">Claim NFT</button> <a href="#" onclick="showForumSettings(); return false;" class="forum-link">Change wallet</a>` : `<a href="#" onclick="showForumSettings(); return false;" class="forum-link forum-link-cta">Add XRP address to claim</a>`}
-            <a href="#" onclick="logout(); closeNewPage(); return false;" class="forum-link forum-link-muted">Log out</a>
+            ${authUser.xrpAddress
+              ? `${(authUser.earnedNftCount || 0) > 0 ? `<span class="forum-claim-wrap"><button type="button" class="forum-btn forum-btn-primary" id="forum-claim-nft-btn" onclick="claimNft()">Claim NFT</button><span class="forum-claim-spinner" id="forum-claim-spinner" aria-hidden="true"></span></span> ` : ''}<a href="#" onclick="openXrpModal(); return false;" class="forum-link">Change wallet</a>`
+              : `<a href="#" onclick="openXrpModal(); return false;" class="forum-link forum-link-cta">Add XRP address to claim</a>`}
+            ${!authUser.xrpAddress ? `<a href="#" onclick="logout(); closeNewPage(); return false;" class="forum-link forum-link-muted">Log out</a>` : ''}
           </div>
         </div>
       ` : ''}
@@ -504,9 +661,9 @@ function loadForumPanel() {
       ` : `<button type="button" class="forum-btn forum-btn-join" onclick="closeNewPage(); openAuthModal();">Log in to join</button>`}
     </div>
   `;
-  loadForumMessages();
+  loadForumMessages(currentForumReelId);
   if (forumPollTimer) clearInterval(forumPollTimer);
-  forumPollTimer = setInterval(loadForumMessages, 5000);
+  forumPollTimer = setInterval(() => loadForumMessages(currentForumReelId), 5000);
   const inputEl = document.getElementById('forum-message-input');
   if (inputEl) {
     inputEl.addEventListener('keydown', (e) => {
@@ -546,11 +703,12 @@ function formatMessageTime(iso) {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-async function loadForumMessages() {
+async function loadForumMessages(reelId) {
   const container = document.querySelector('.forum-messages');
   if (!container) return;
+  const rid = reelId != null ? reelId : currentForumReelId;
   try {
-    const res = await fetch(API_BASE + '/api/forum/messages');
+    const res = await fetch(API_BASE + '/api/forum/messages?reelId=' + encodeURIComponent(String(rid)));
     const data = await res.json();
     const list = data.messages || [];
     const currentEmail = authUser && authUser.email ? authUser.email : '';
@@ -581,7 +739,7 @@ async function sendForumMessage() {
     const res = await fetch(API_BASE + '/api/forum/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, reelId: currentForumReelId }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -593,8 +751,8 @@ async function sendForumMessage() {
     if (data.earnedNftCount != null) authUser.earnedNftCount = data.earnedNftCount;
     saveAuthUser();
     if (data.earnedNft) alert('You earned a participation NFT! Add your XRP address and click Claim to receive it on-chain.');
-    loadForumMessages();
-    loadForumPanel();
+    loadForumMessages(currentForumReelId);
+    loadForumPanel(currentForumReelId);
   } catch (e) {
     alert('Network error.');
   }
@@ -602,6 +760,10 @@ async function sendForumMessage() {
 
 async function claimNft() {
   if (!authUser || !authUser.xrpAddress || (authUser.earnedNftCount || 0) < 1) return;
+  const btn = document.getElementById('forum-claim-nft-btn');
+  const spinner = document.getElementById('forum-claim-spinner');
+  if (btn) { btn.disabled = true; }
+  if (spinner) { spinner.classList.add('forum-claim-spinner--active'); spinner.setAttribute('aria-hidden', 'false'); }
   try {
     const res = await fetch(API_BASE + '/api/rewards/claim', { method: 'POST', headers: getAuthHeader() });
     const data = await res.json();
@@ -611,10 +773,13 @@ async function claimNft() {
     }
     authUser.earnedNftCount = (authUser.earnedNftCount || 0) - 1;
     saveAuthUser();
-    loadForumPanel();
+    loadForumPanel(currentForumReelId);
     alert(data.message + '\n\n' + (data.explorer ? 'View: ' + data.explorer : ''));
   } catch (e) {
     alert('Network error.');
+  } finally {
+    if (btn) { btn.disabled = false; }
+    if (spinner) { spinner.classList.remove('forum-claim-spinner--active'); spinner.setAttribute('aria-hidden', 'true'); }
   }
 }
 
@@ -626,22 +791,23 @@ function getFromCache(cache, key) {
     return null;
 }
 
-// TODO: Article and charity functionality needs to be adjusted to suit each specific reel
-// (e.g. per-reel topics, hashtags, or context so recommendations match the current reel).
-async function loadArticleRecommendations() {
+// Articles: context from the reel on the left (currentReelId). Always clear previous topic so new topic replaces old.
+async function loadArticleRecommendations(currentReelId) {
     if (articlesAbortController) articlesAbortController.abort();
     articlesAbortController = new AbortController();
     const signal = articlesAbortController.signal;
 
     const panelBody = document.getElementById('new-page-content');
-    const issues = [];
-    viewedVideos.forEach((id) => {
-        const video = videoData.find((v) => String(v.id) === String(id));
-        if (video) issues.push(`${video.creator || ''} — ${video.desc || ''}`);
-    });
+    // Clear any previous topic's articles immediately so we never show stale articles when switching reels
+    panelBody.innerHTML = '<p class="panel-message loading">Getting article recommendations for this reel…</p>';
 
+    const issues = [];
+    if (currentReelId != null) {
+        const video = videoData.find((v) => String(v.id) === String(currentReelId));
+        if (video) issues.push(`${video.creator || ''} — ${video.desc || ''}`);
+    }
     if (issues.length === 0) {
-        panelBody.innerHTML = `<p class="panel-message">Watch a few videos in your feed first. We'll recommend articles based on the issues you're learning about.</p>`;
+        panelBody.innerHTML = `<p class="panel-message">Open Articles from a reel to get recommendations for that reel's topic.</p>`;
         return;
     }
 
@@ -651,8 +817,6 @@ async function loadArticleRecommendations() {
         renderArticleCards(panelBody, cached.recommendations);
         return;
     }
-
-    panelBody.innerHTML = `<p class="panel-message loading">Getting article recommendations from AI…</p>`;
 
     try {
         const res = await fetch(`${API_BASE}/api/recommend-articles`, {
@@ -714,21 +878,22 @@ function renderArticleCards(panelBody, list) {
     `;
 }
 
-// TODO: Charity recommendations should be adjusted per reel (see article TODO above).
-async function loadCharityRecommendations() {
+// Charities: context from the reel on the left. Clear previous topic when switching reels.
+async function loadCharityRecommendations(currentReelId) {
     if (charitiesAbortController) charitiesAbortController.abort();
     charitiesAbortController = new AbortController();
     const signal = charitiesAbortController.signal;
 
     const panelBody = document.getElementById('new-page-content');
-    const issues = [];
-    viewedVideos.forEach((id) => {
-        const video = videoData.find((v) => String(v.id) === String(id));
-        if (video) issues.push(`${video.creator || ''} — ${video.desc || ''}`);
-    });
+    panelBody.innerHTML = '<p class="panel-message loading">Getting charity recommendations for this reel…</p>';
 
+    const issues = [];
+    if (currentReelId != null) {
+        const video = videoData.find((v) => String(v.id) === String(currentReelId));
+        if (video) issues.push(`${video.creator || ''} — ${video.desc || ''}`);
+    }
     if (issues.length === 0) {
-        panelBody.innerHTML = `<p class="panel-message">Watch a few videos first. We'll recommend charities based on what you're learning about.</p>`;
+        panelBody.innerHTML = `<p class="panel-message">Open Charities from a reel to get recommendations for that reel's topic.</p>`;
         return;
     }
 
@@ -738,8 +903,6 @@ async function loadCharityRecommendations() {
         renderCharityCards(panelBody, cached.recommendations);
         return;
     }
-
-    panelBody.innerHTML = `<p class="panel-message loading">Getting charity recommendations from AI…</p>`;
 
     try {
         const res = await fetch(`${API_BASE}/api/recommend-charities`, {
@@ -804,17 +967,18 @@ function renderCharityCards(panelBody, list) {
 
 const PROTESTS_CITIES = ['Toronto', 'Montreal', 'Vancouver'];
 
-function showProtestsPanel(selectedCity) {
+// Protests: context from the reel on the left. Panel is replaced by city toggle + messages so previous topic doesn't persist.
+function showProtestsPanel(selectedCity, currentReelId) {
     const panelBody = document.getElementById('new-page-content');
     const issues = [];
-    viewedVideos.forEach((id) => {
-        const video = videoData.find((v) => String(v.id) === String(id));
+    if (currentReelId != null) {
+        const video = videoData.find((v) => String(v.id) === String(currentReelId));
         if (video) issues.push(`${video.creator || ''} — ${video.desc || ''}`);
-    });
+    }
 
     const toggleHtml = `
         <p class="panel-message">Choose a city:</p>
-        <div class="protests-city-toggle" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+        <div class="protests-city-toggle" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;" data-reel-id="${currentReelId != null ? escapeHtml(String(currentReelId)) : ''}">
             ${PROTESTS_CITIES.map((city) => `
                 <button type="button" class="dash-btn ${city === selectedCity ? 'dash-btn-donate' : ''}" data-city="${escapeHtml(city)}" style="min-width:100px;">
                     ${escapeHtml(city)}
@@ -822,12 +986,13 @@ function showProtestsPanel(selectedCity) {
             `).join('')}
         </div>
     `;
-    panelBody.innerHTML = toggleHtml + '<p class="panel-message loading">Finding protests…</p>';
+    panelBody.innerHTML = toggleHtml + '<p class="panel-message loading">Finding protests for this reel…</p>';
     panelBody.querySelector('.protests-city-toggle').addEventListener('click', (e) => {
         const btn = e.target.closest('[data-city]');
         if (!btn) return;
         const city = btn.getAttribute('data-city');
-        showProtestsPanel(city);
+        const reelId = e.currentTarget.getAttribute('data-reel-id') || null;
+        showProtestsPanel(city, reelId);
     });
 
     loadProtestsByCity(panelBody, selectedCity, issues);
@@ -984,7 +1149,21 @@ function skipVideo(btn, seconds) {
     video.currentTime += seconds;
 }
 
-// Restore auth on load
+// Close profile dropdown when clicking outside
+document.addEventListener('click', function (e) {
+  const wrap = document.getElementById('header-auth-wrap');
+  if (!wrap || !wrap.classList.contains('profile-open')) return;
+  if (!wrap.contains(e.target)) closeProfileDropdown();
+});
+
+// Restore auth on load. If server says session is invalid (e.g. after Ctrl+C restart), clear everything and show "Log in".
+function clearStoredAuth() {
+  authToken = null;
+  authUser = null;
+  localStorage.removeItem('azadi_token');
+  localStorage.removeItem(AUTH_USER_KEY);
+}
+
 (function initAuth() {
   if (!authToken) {
     updateHeaderAuthButton();
@@ -993,18 +1172,21 @@ function skipVideo(btn, seconds) {
   fetch(API_BASE + '/api/auth/me', { headers: getAuthHeader() })
     .then((res) => {
       if (res.ok) return res.json();
-      authToken = null;
-      localStorage.removeItem('azadi_token');
+      clearStoredAuth();
       return null;
     })
     .then((data) => {
       if (data && data.user) {
         authUser = data.user;
         saveAuthUser();
+      } else {
+        // Session invalid or server restarted – ensure UI shows "Log in"
+        clearStoredAuth();
       }
       updateHeaderAuthButton();
     })
     .catch(() => {
+      clearStoredAuth();
       updateHeaderAuthButton();
     });
 })();

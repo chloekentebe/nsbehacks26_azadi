@@ -16,7 +16,14 @@
             <h1 class="brand">azadi</h1>
             <span class="tagline">knowledge is power</span>
         </div>
-        <button type="button" id="header-auth-btn" onclick="openAuthModal()" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); padding:8px 14px; border-radius:6px; border:1px solid #333; background:transparent; cursor:pointer; font-size:14px;">Log in</button>
+        <div class="header-auth-wrap" id="header-auth-wrap">
+            <button type="button" id="header-auth-btn" class="header-auth-btn" onclick="openAuthModal()">Log in</button>
+            <div id="header-profile-dropdown" class="header-profile-dropdown" aria-hidden="true">
+                <button type="button" class="header-profile-item" onclick="openProfileForums()"><i data-feather="message-square"></i> Forums</button>
+                <button type="button" class="header-profile-item" onclick="openXrpModal()"><i data-feather="credit-card"></i> Change XRP address</button>
+                <button type="button" class="header-profile-item header-profile-item--danger" onclick="doLogout()"><i data-feather="log-out"></i> Log out</button>
+            </div>
+        </div>
     </header>
 
     <div class="impact-bar-container">
@@ -50,15 +57,33 @@
         </div>
     </div>
 
-    <div id="auth-modal" class="reward-modal">
-        <div class="reward-content">
-            <h3 id="auth-modal-title">Log in</h3>
-            <p class="panel-message" id="auth-message" style="margin-bottom:8px;"></p>
-            <input type="email" id="auth-email" placeholder="Email" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ccc; border-radius:6px;">
-            <input type="password" id="auth-password" placeholder="Password (min 6)" style="width:100%; padding:10px; margin-bottom:12px; border:1px solid #ccc; border-radius:6px;">
-            <button class="action-btn" onclick="submitAuth()">Log in</button>
-            <button class="secondary-btn" onclick="toggleAuthMode()" id="auth-toggle-btn">Create account</button>
-            <button class="secondary-btn" onclick="closeAuthModal()" style="margin-top:6px;">Cancel</button>
+    <div id="auth-modal" class="auth-screen" aria-modal="true" role="dialog">
+        <button type="button" class="auth-screen-close" onclick="closeAuthModal()" aria-label="Close"><i data-feather="x"></i></button>
+        <div class="auth-screen-card">
+            <h2 class="auth-screen-brand">azadi</h2>
+            <p class="auth-screen-tagline">knowledge is power</p>
+            <h3 id="auth-modal-title" class="auth-screen-title">Log in</h3>
+            <p id="auth-message" class="auth-screen-message" aria-live="polite"></p>
+            <form class="auth-screen-form" onsubmit="submitAuth(); return false;">
+                <input type="email" id="auth-email" class="auth-screen-input" placeholder="Email" autocomplete="email" required>
+                <input type="password" id="auth-password" class="auth-screen-input" placeholder="Password (min 6 characters)" autocomplete="current-password" minlength="6" required>
+                <input type="text" id="auth-xrp" class="auth-screen-input" placeholder="XRP Ledger address (optional, r...)" autocomplete="off">
+                <button type="submit" class="auth-screen-submit" id="auth-submit-btn">Log in</button>
+            </form>
+            <button type="button" class="auth-screen-toggle" id="auth-toggle-btn" onclick="toggleAuthMode()">Create account</button>
+        </div>
+    </div>
+
+    <div id="xrp-modal" class="auth-screen" aria-hidden="true">
+        <button type="button" class="auth-screen-close" onclick="closeXrpModal()" aria-label="Close"><i data-feather="x"></i></button>
+        <div class="auth-screen-card xrp-modal-content">
+            <h3 class="auth-screen-title">XRP Ledger address</h3>
+            <p class="auth-screen-hint" id="xrp-message" aria-live="polite">Enter your address to receive participation NFTs (starts with r…).</p>
+            <input type="text" id="xrp-address-input" class="auth-screen-input" placeholder="r..." autocomplete="off">
+            <div class="xrp-modal-actions">
+                <button type="button" class="auth-screen-submit" onclick="saveXrpAddress()">Save</button>
+                <button type="button" class="auth-screen-toggle" onclick="closeXrpModal()">Cancel</button>
+            </div>
         </div>
     </div>
 
