@@ -24,6 +24,9 @@
                 <button type="button" class="header-profile-item header-profile-item--danger" onclick="doLogout()"><i data-feather="log-out"></i> Log out</button>
             </div>
         </div>
+        <button class="theme-toggle" onclick="toggleRugTheme()" title="Toggle Background">
+            <i data-feather="image"></i>
+        </button>
     </header>
 
     <div class="impact-bar-container">
@@ -56,7 +59,6 @@
             <button class="secondary-btn" onclick="closeRewardModal()">Keep Watching</button>
         </div>
     </div>
-
     <div id="auth-modal" class="auth-screen" aria-modal="true" role="dialog">
         <button type="button" class="auth-screen-close" onclick="closeAuthModal()" aria-label="Close"><i data-feather="x"></i></button>
         <div class="auth-screen-card">
@@ -87,6 +89,7 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/xrpl@2.14.0/build/xrpl-latest-min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
     <script src="script.js"></script>

@@ -304,7 +304,9 @@ const pageContentData = {
                 <p>Demand action on the new emissions bill. Bring signs, water, and masks.</p>
                 <div class="dash-card-footer">
                     <span style="color:#888; font-size:13px;">📍 Tomorrow, 2:00 PM</span>
-                    <button class="dash-btn">RSVP</button>
+                    
+                    <button class="dash-btn" onclick="startRegistration(this, 'https://www.eventbrite.com/')">Register</button>
+                    
                 </div>
             </div>
         </div>
@@ -1257,3 +1259,106 @@ function clearStoredAuth() {
       updateHeaderAuthButton();
     });
 })();
+
+// ---------------- RUG THEME TOGGLE LOGIC (partner GUI) ----------------
+let isRugTheme = false;
+
+function toggleRugTheme() {
+    isRugTheme = !isRugTheme;
+
+    // Toggles the dark rug CSS class on the body of the website
+    document.body.classList.toggle('rug-theme', isRugTheme);
+
+    // Swap the icon inside the button
+    const toggleBtn = document.querySelector('.theme-toggle');
+    if (isRugTheme) {
+        toggleBtn.innerHTML = '<i data-feather="droplet"></i>'; // Shows a drop for the blue gradient
+    } else {
+        toggleBtn.innerHTML = '<i data-feather="image"></i>'; // Shows an image icon for the rug
+    }
+
+    // Tell Feather to redraw the new icon we just injected
+    feather.replace();
+}
+// EXTERNAL REGISTRATION AND MINING FLOW (partner GUI)
+// ---------------- EXTERNAL REGISTRATION & MINTING FLOW ----------------
+
+function startRegistration(btnElement, externalUrl) {
+    // Open the external registration page in a new tab
+    window.open(externalUrl, '_blank');
+
+    // Transform the button into the "Claim" state
+    btnElement.innerText = "🏅 Claim Action Badge";
+    btnElement.style.background = "var(--action-orange)";
+    btnElement.style.color = "#111";
+    btnElement.style.border = "2px solid #111";
+
+    // Swap the onclick function so the NEXT click triggers the XRPL mint
+    btnElement.onclick = function () {
+        mintBadge(this); // Calls the XRPL function we already wrote
+    };
+}
+
+//  XRPL PROOF-OF-ACTION BADGE LOGIC 
+async function mintBadge(btnElement) {
+    // 1. Change button state to show loading
+    const originalText = btnElement.innerText;
+    btnElement.innerText = "Minting Badge on XRPL...";
+    btnElement.style.opacity = "0.7";
+    btnElement.disabled = true;
+
+    try {
+        // 2. Connect to the XRPL Testnet
+        const client = new xrpl.Client("wss://s.altnet.rippletest.net:51233");
+        await client.connect();
+        console.log("Connected to XRPL Testnet");
+
+        // 3. For the MVP, we generate a funded test wallet automatically
+        // (In a production app, the user would connect their own wallet like Crossmark or Gem)
+        console.log("Funding test wallet...");
+        const { wallet } = await client.fundWallet();
+        console.log("Test wallet created:", wallet.address);
+
+        // 4. Define the Badge Metadata (URI)
+        // This links to a JSON file or image representing the "City Hall Climate Strike" badge
+        const badgeURI = "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3dfuylqabf3oclgtqy55fbzdi";
+
+        // 5. Construct the Mint Transaction
+        const transactionBlob = {
+            "TransactionType": "NFTokenMint",
+            "Account": wallet.address,
+            "URI": xrpl.convertStringToHex(badgeURI), // XRPL requires URIs to be in Hex format
+            "Flags": 8, // Transferable flag (you can set this to 0 for soulbound/non-transferable)
+            "TokenTaxon": 0, // Required field
+            "NFTokenTaxon": 0
+        };
+
+        // 6. Submit the transaction to the ledger
+        console.log("Submitting transaction...");
+        const tx = await client.submitAndWait(transactionBlob, { wallet: wallet });
+
+        console.log("Transaction complete!", tx);
+
+        // 7. Update the UI to show success!
+        btnElement.innerText = "✅ Badge Minted!";
+        btnElement.style.background = "#27ae60"; // Turn button green
+        btnElement.style.color = "white";
+        btnElement.style.border = "none";
+        btnElement.disabled = true; // Prevents them from minting it twice
+
+        // Show the user their transaction hash so they know it's real
+        alert(`Success! Your Proof-of-Action Badge was minted on the XRPL.\n\nTransaction Hash: ${tx.result.hash}`);
+
+        // Disconnect
+        await client.disconnect();
+
+    } catch (error) {
+        console.error("Error minting badge:", error);
+        btnElement.innerText = "❌ Minting Failed";
+        setTimeout(() => {
+            btnElement.innerText = originalText;
+            btnElement.style.opacity = "1";
+            btnElement.disabled = false;
+        }, 3000);
+    }
+}
