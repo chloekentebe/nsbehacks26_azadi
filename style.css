@@ -61,10 +61,10 @@ body {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* THE RUG THEME TOGGLE BUTTON */
+/* THE RUG THEME TOGGLE BUTTON – left of Log in, no overlap */
 .theme-toggle {
     position: absolute;
-    right: 40px;
+    right: 130px;
     top: 50%;
     transform: translateY(-50%);
     background: rgba(0, 0, 0, 0.5);
@@ -79,8 +79,6 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
-    z-index: 201;
-    /* Keeps it clickable above the header */
 }
 
 .theme-toggle:hover {
@@ -650,6 +648,7 @@ video {
     right: 20px;
     top: 50%;
     transform: translateY(-50%);
+    z-index: 202;
 }
 
 .header-auth-btn {
